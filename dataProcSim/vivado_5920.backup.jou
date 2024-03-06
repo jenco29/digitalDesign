@@ -1,0 +1,17 @@
+#-----------------------------------------------------------
+# Vivado v2023.1 (64-bit)
+# SW Build 3865809 on Sun May  7 15:05:29 MDT 2023
+# IP Build 3864474 on Sun May  7 20:36:21 MDT 2023
+# SharedData Build 3865790 on Sun May 07 13:33:03 MDT 2023
+# Start of session at: Wed Feb 21 10:04:55 2024
+# Process ID: 5920
+# Current directory: C:/Users/pl22413/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/dataProcSim
+# Command line: vivado.exe -gui_launcher_event rodinguilauncherevent13564 C:\Users\pl22413\OneDrive - University of Bristol\Documents\CSE\Digital Design\groupProject\dataProcSim\dataProcSim.xpr
+# Log file: C:/Users/pl22413/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/dataProcSim/vivado.log
+# Journal file: C:/Users/pl22413/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/dataProcSim\vivado.jou
+# Running On: IT077197, OS: Windows, CPU Frequency: 3000 MHz, CPU Physical cores: 8, Host memory: 16951 MB
+#-----------------------------------------------------------
+start_gui
+open_project {C:/Users/pl22413/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/dataProcSim/dataProcSim.xpr}
+update_compile_order -fileset sources_1
+save_project_as dataProcSim_ {C:/Users/pl22413/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/dataProcSim_} -force

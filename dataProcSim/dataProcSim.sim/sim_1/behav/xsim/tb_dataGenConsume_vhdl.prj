@@ -1,0 +1,9 @@
+# compile vhdl design source files
+vhdl xil_defaultlib  \
+"../../../../dataProcSim.srcs/sources_1/imports/peak_detector/common_pack.vhd" \
+"../../../../dataProcSim.srcs/sources_1/new/dataConsume.vhd" \
+"../../../../dataProcSim.srcs/sources_1/imports/peak_detector/dataGen.vhd" \
+"../../../../dataProcSim.srcs/sources_1/imports/peak_detector/signed/tb_dataConsume_signed.vhd" \
+
+# Do not sort compile order
+nosort
