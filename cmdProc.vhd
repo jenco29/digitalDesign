@@ -15,20 +15,25 @@ entity cmdProc is
     Port (       
       clk:	in std_logic;
       reset: in std_logic;
-      rxNow: in std_logic;
-      rxData: in std_logic_vector (7 downto 0);
-      txData: out std_logic_vector (7 downto 0);
-      rxDone: out std_logic;
+      
+      rxNow: in std_logic; -- valid
+      rxData: in std_logic_vector (7 downto 0); -- rx data
+      rxDone: out std_logic; --rx done
+      
       ovErr: in std_logic;
       framErr:	in std_logic;
+      
+      txData: out std_logic_vector (7 downto 0);
       txNow: out std_logic;
       txDone: in std_logic;
+      
       start: out std_logic;
       numWords_bcd: out BCD_ARRAY_TYPE(2 downto 0);
       dataReady: in std_logic;
-      byte: in std_logic_vector(7 downto 0));
+      byte: in std_logic_vector(7 downto 0);
       maxIndex: in BCD_ARRAY_TYPE(2 downto 0);
       dataResults: in CHAR_ARRAY_TYPE(0 to RESULT_BYTE_NUM-1);
+      seqDone: in std_logic);
 end cmdProc;
 
 architecture Behavioral of cmdProc is
@@ -51,6 +56,10 @@ architecture Behavioral of cmdProc is
     -- counters and register declarations
     signal counterN : integer range 0 to 3 := 0; -- to validate ANNN input
     signal reg1, reg2, reg3 : std_logic_vector(3 downto 0); -- to store "NNN" as BCD
+    
+    -- enumeration of ascii integer 0-9
+    type ascii_integer is (
+        "00110000", "00110001", "00110010", "00110011", "00110100", "00110101", "00110110", "00110111", "00111000", "00111001");
 
 begin
 
@@ -102,17 +111,28 @@ begin
                 --txdone <= '0';
                     txNow <= '0';
                     start <= '0';
-                    done <= '0';
-                    numWords_bcd <= '0'; -- add reset
+                    rxDone <= '0';
+                    numWords_bcd <= (others => "0"); -- add reset
                     
-                    if (valid = '1') and (oe = '0') and (fe = '0') and (rxData = '01000001' or '01100001') then -- received 'a' or 'A' in ascii
+                    
+                    if (rxNow = '1') and (ovErr = '0') and (framErr = '0') and (rxData = "01000001" or rxData = "01100001") then -- received 'a' or 'A' in ascii
+                        
                     end if;
             
                 when CHECKNNN =>
                 
                   --done <= '1'
                 
-                  if rxData = integer --0 to 9		  
+                  if rxData = std_logic_vector(ascii_integer'pos((ascii_integer'pos(ascii_integer'val(0)), 8)) then -- or use for loop??
+--                  rxData = std_logic_vector(ascii_integer'val(1)) or
+--                  rxData = std_logic_vector(ascii_integer'val(2)) or
+--                  rxData = std_logic_vector(ascii_integer'val(3)) or
+--                  rxData = std_logic_vector(ascii_integer'val(4)) or
+--                  rxData = std_logic_vector(ascii_integer'val(5)) or
+--                  rxData = std_logic_vector(ascii_integer'val(6)) or
+--                  rxData = std_logic_vector(ascii_integer'val(7)) or
+--                  rxData = std_logic_vector(ascii_integer'val(8)) or
+--                  rxData = std_logic_vector(ascii_integer'val(9)) then
                       counterN <= counterN + 1;
                   end if;
                   
@@ -151,15 +171,23 @@ begin
                 State <= INIT;
             end case;
         end if;
-    if (reset = '1') then
-        currentState <= INIT;
-    end if;
+        if (reset = '1') then
+            currentState <= INIT;
+        end if;
     end process;
     
 ---------------------- PL FSM
 
 
 
----------------------- DATA ECHOING FSM
+---------------------- DATA ECHOING FSM [runs concurrently 
+    data_echoing : process (clk, reset)
+    begin
+        if reset = '1' then
+            -- reset data echoing state
+        elsif rising_edge(clk) then
+        if rxNow = '1' then
+        
+
 
 end Behavioral;
