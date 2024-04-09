@@ -44,8 +44,8 @@ architecture Behavioral of cmdProc is
     signal top_state : top_state_type := INIT;
 
 
-    --type data_echo_state_type is (INIT, ECHO);
-    --signal data_echo_state : data_echo_state_type := INIT;
+    type data_echo_state_type is (INIT, ECHO); -- is this necessary
+    signal data_echo_state : data_echo_state_type := INIT;
     
     type pl_state_type is (INIT, START_PROC, SEND_TX);
     signal pl_state : pl_state_type := INIT;
@@ -59,7 +59,8 @@ architecture Behavioral of cmdProc is
     
     -- enumeration of ascii integer 0-9
     type ascii_integer is (
-        "00110000", "00110001", "00110010", "00110011", "00110100", "00110101", "00110110", "00110111", "00111000", "00111001");
+        "00110000", 
+        "00110001", "00110010", "00110011", "00110100", "00110101", "00110110", "00110111", "00111000", "00111001");
 
 begin
 
@@ -100,6 +101,7 @@ begin
         end if;
     
     end process; --end top-level fsm
+    
 
     -------------------- ANNN sub-FSM process
     ANNN_process : process (CLK)
@@ -123,16 +125,22 @@ begin
                 
                   --done <= '1'
                 
-                  if rxData = std_logic_vector(ascii_integer'pos((ascii_integer'pos(ascii_integer'val(0)), 8)) then -- or use for loop??
---                  rxData = std_logic_vector(ascii_integer'val(1)) or
---                  rxData = std_logic_vector(ascii_integer'val(2)) or
---                  rxData = std_logic_vector(ascii_integer'val(3)) or
---                  rxData = std_logic_vector(ascii_integer'val(4)) or
---                  rxData = std_logic_vector(ascii_integer'val(5)) or
---                  rxData = std_logic_vector(ascii_integer'val(6)) or
---                  rxData = std_logic_vector(ascii_integer'val(7)) or
---                  rxData = std_logic_vector(ascii_integer'val(8)) or
---                  rxData = std_logic_vector(ascii_integer'val(9)) then
+                  if rxData = std_logic_vector(ascii_integer'pos(ascii_integer'val(0)), 8) then -- or use for loop??
+                  rxData = std_logic_vector(ascii_integer'val(1)) or
+                  rxData = std_logic_vector(ascii_integer'val(2)) or
+                  rxData = std_logic_vector(ascii_integer'val(3)) or
+                  rxData = std_logic_vector(ascii_integer'val(4)) or
+                  rxData = std_logic_vector(ascii_integer'val(5)) or
+                  rxData = std_logic_vector(ascii_integer'val(6)) or
+                  rxData = std_logic_vector(ascii_integer'val(7)) or
+                  rxData = std_logic_vector(ascii_integer'val(8)) or
+                  rxData = std_logic_vector(ascii_integer'val(9)) then
+                        
+                  end if;
+                
+                  
+                  
+                  if rxData = 
                       counterN <= counterN + 1;
                   end if;
                   
@@ -145,8 +153,8 @@ begin
                   end if;
                   
                 when START_DP =>
-                  numWords_bcd <= reg1 & reg2 & reg3 -- concatenate 
-                  start <= '1'
+                  numWords_bcd <= reg1 & reg2 & reg3; -- concatenate 
+                  start <= '1';
                   
                   if (dataReady = '1') then
                     State <= FINALSEND;
@@ -161,8 +169,8 @@ begin
                   State <= SEND;	
                       
                 when FINALSEND =>
-                  txData <= rxData
-                  txNow <= '1'
+                  txData <= rxData;
+                  txNow <= '1';
                   if (txDone = '1') then
                         State <= INIT;
               end if;
@@ -185,9 +193,32 @@ begin
     begin
         if reset = '1' then
             -- reset data echoing state
-        elsif rising_edge(clk) then
-        if rxNow = '1' then
+            data_echo_state <= INIT;
         
+        elsif rising_edge(clk) then
+        
+        case data_echo_state is
+        
+            when INIT =>
+                rxDone <= '0';
+                -- reset registers etc
+                
+                if rxNow = '1' then
+                    data_echo_state <= ECHO;
+                end if;
+            when ECHO =>
+                txData <= rxData;
+                txNow <= '1';
+                
+                if txDone = '1' then
+                    data_echo_state <= INIT;
+                end if;
+                
+        end case;
+        end if;
+    end process;
+                
+            
 
 
 end Behavioral;
