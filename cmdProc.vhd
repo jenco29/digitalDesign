@@ -58,10 +58,18 @@ architecture Behavioral of cmdProc is
     signal reg1, reg2, reg3 : std_logic_vector(3 downto 0); -- to store "NNN" as BCD
     
     -- enumeration of ascii integer 0-9
-    type ascii_integer is (
-        "00110000", 
-        "00110001", "00110010", "00110011", "00110100", "00110101", "00110110", "00110111", "00111000", "00111001");
-
+    --type ascii_integer is (00110000, 00110001, 00110010, 00110011, 00110100, 00110101, 00110110, 00110111, 00111000, 00111001);
+    constant d0 : std_logic_vector (7 downto 0) := "00110000";
+    constant d1 : std_logic_vector (7 downto 0) := "00110001";
+    constant d2 : std_logic_vector (7 downto 0) := "00110010";
+    constant d3 : std_logic_vector (7 downto 0) := "00110011";
+    constant d4 : std_logic_vector (7 downto 0) := "00110100";
+    constant d5 : std_logic_vector (7 downto 0) := "00110101";
+    constant d6 : std_logic_vector (7 downto 0) := "00110110";
+    constant d7 : std_logic_vector (7 downto 0) := "00110111";
+    constant d8 : std_logic_vector (7 downto 0) := "00111000";
+    constant d9 : std_logic_vector (7 downto 0) := "00111001";
+    
 begin
 
 --------------------------- TOP LEVEL FSM
@@ -124,25 +132,15 @@ begin
                 when CHECKNNN =>
                 
                   --done <= '1'
-                
-                  if rxData = std_logic_vector(ascii_integer'pos(ascii_integer'val(0)), 8) then -- or use for loop??
-                  rxData = std_logic_vector(ascii_integer'val(1)) or
-                  rxData = std_logic_vector(ascii_integer'val(2)) or
-                  rxData = std_logic_vector(ascii_integer'val(3)) or
-                  rxData = std_logic_vector(ascii_integer'val(4)) or
-                  rxData = std_logic_vector(ascii_integer'val(5)) or
-                  rxData = std_logic_vector(ascii_integer'val(6)) or
-                  rxData = std_logic_vector(ascii_integer'val(7)) or
-                  rxData = std_logic_vector(ascii_integer'val(8)) or
-                  rxData = std_logic_vector(ascii_integer'val(9)) then
-                        
-                  end if;
-                
-                  
-                  
-                  if rxData = 
+               
+                  case rxData is
+                  -- when rxData is an integer
+                    when d0 | d1 | d2 | d3 | d4 | d5 | d6 | d7 | d8 | d9 =>
                       counterN <= counterN + 1;
-                  end if;
+                    when others => --when input is not integer
+                      annn_state <= INIT;
+                      
+                  end case;
                   
                   if counterN = 1 then
                       reg1 = N;
