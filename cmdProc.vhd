@@ -55,20 +55,20 @@ architecture Behavioral of cmdProc is
     
     -- counters and register declarations
     signal counterN : integer range 0 to 3 := 0; -- to validate ANNN input
-    signal reg1, reg2, reg3 : std_logic_vector(3 downto 0); -- to store "NNN" as BCD
+    signal reg1, reg2, reg3 : BCD_ARRAY_TYPE(BCD_WORD_LENGTH-1 downto 0) := (others => "0000"); -- to store "NNN" as BCD
     
     -- enumeration of ascii integer 0-9
     --type ascii_integer is (00110000, 00110001, 00110010, 00110011, 00110100, 00110101, 00110110, 00110111, 00111000, 00111001);
-    constant d0 : std_logic_vector (7 downto 0) := "00110000";
-    constant d1 : std_logic_vector (7 downto 0) := "00110001";
-    constant d2 : std_logic_vector (7 downto 0) := "00110010";
-    constant d3 : std_logic_vector (7 downto 0) := "00110011";
-    constant d4 : std_logic_vector (7 downto 0) := "00110100";
-    constant d5 : std_logic_vector (7 downto 0) := "00110101";
-    constant d6 : std_logic_vector (7 downto 0) := "00110110";
-    constant d7 : std_logic_vector (7 downto 0) := "00110111";
-    constant d8 : std_logic_vector (7 downto 0) := "00111000";
-    constant d9 : std_logic_vector (7 downto 0) := "00111001";
+--    constant d0 : std_logic_vector (7 downto 0) := "00110000";
+--    constant d1 : std_logic_vector (7 downto 0) := "00110001";
+--    constant d2 : std_logic_vector (7 downto 0) := "00110010";
+--    constant d3 : std_logic_vector (7 downto 0) := "00110011";
+--    constant d4 : std_logic_vector (7 downto 0) := "00110100";
+--    constant d5 : std_logic_vector (7 downto 0) := "00110101";
+--    constant d6 : std_logic_vector (7 downto 0) := "00110110";
+--    constant d7 : std_logic_vector (7 downto 0) := "00110111";
+--    constant d8 : std_logic_vector (7 downto 0) := "00111000";
+--    constant d9 : std_logic_vector (7 downto 0) := "00111001";
     
 begin
 
@@ -84,6 +84,16 @@ begin
         elsif rising_edge(clk) then
             case top_state is
                 when INIT =>
+                    -- init all counters and registers again as 0
+                    reg1 <= (others => '0');
+                    reg2 <= (others => '0');
+                    reg3 <= (others => '0');
+                    counterN <= 0;
+                    txNow <= '0';
+                    start <= '0';
+                    rxDone <= '0';
+                    numWords_bcd <= (others => "0"); -- add reset
+                
                     if rxNow = '1' then
                         -- if 'a' or 'A' input
                         if rxData = "01000001" or rxData = "01100001" then 
@@ -119,39 +129,45 @@ begin
             
                 when INIT => -- initial state
                 --txdone <= '0';
-                    txNow <= '0';
-                    start <= '0';
-                    rxDone <= '0';
-                    numWords_bcd <= (others => "0"); -- add reset
+                    
                     
                     
                     if (rxNow = '1') and (ovErr = '0') and (framErr = '0') and (rxData = "01000001" or rxData = "01100001") then -- received 'a' or 'A' in ascii
-                        
+                        annn_state <= CHECK_NNN;
                     end if;
             
-                when CHECKNNN =>
+                when CHECK_NNN =>
                 
-                  --done <= '1'
-               
-                  case rxData is
-                  -- when rxData is an integer
-                    when d0 | d1 | d2 | d3 | d4 | d5 | d6 | d7 | d8 | d9 =>
-                      counterN <= counterN + 1;
-                    when others => --when input is not integer
-                      annn_state <= INIT;
-                      
-                  end case;
-                  
-                  if counterN = 1 then
-                      reg1 = N;
-                  else if counterN = 2 then
-                      reg2 = N;
-                  else if counterN = 3 then
-                      reg3 = N;
+                  rxDone <= '1'; -- for one cycle
+                  -- if rxData is integer 0-9
+                  if rxData(3 downto 0) >="0000" and rxData(3 downto 0) >= "1001" then
+                   counterN <= counterN + 1;
+                      if counterN = 1 then
+                        reg1 <= rxData(3 downto 0);
+                      elsif counterN = 2 then
+                        reg2 <= rxData(3 downto 0);
+                      elsif counterN = 3 then
+                        reg3 <= rxData(3 downto 0);
+                        annn_state <= START_DP;
+                      end if;
+                  else
+                    annn_state <= INIT; -- go back to reset state
                   end if;
                   
+--                  case rxData is
+--                  -- when rxData is an integer
+--                    when d0 | d1 | d2 | d3 | d4 | d5 | d6 | d7 | d8 | d9 =>
+                      
+                      
+--                    when others => --when input is not integer
+--                      annn_state <= INIT; -- go back to reset state
+                      
+--                  end case;
+                  
+
                 when START_DP =>
-                  numWords_bcd <= reg1 & reg2 & reg3; -- concatenate 
+                
+                  numWords_bcd <= CONCAT(reg1, reg2, reg3); -- concatenate 
                   start <= '1';
                   
                   if (dataReady = '1') then
@@ -159,8 +175,8 @@ begin
                   end if;
         
                 when SENDBYTE =>
-                  txData <= rxData
-                  txNow <= '1'
+                  txData <= rxData;
+                  txNow <= '1';
                   if (txDone = '1') then
                         State <= INIT;
                   end if;
