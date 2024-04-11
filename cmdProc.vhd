@@ -85,9 +85,9 @@ begin
             case top_state is
                 when INIT =>
                     -- init all counters and registers again as 0
-                    reg1 <= (others => '0');
-                    reg2 <= (others => '0');
-                    reg3 <= (others => '0');
+                    reg1 <= (others => "0000");
+                    reg2 <= (others => "0000");
+                    reg3 <= (others => "0000");
                     counterN <= 0;
                     txNow <= '0';
                     start <= '0';
@@ -122,7 +122,7 @@ begin
     
 
     -------------------- ANNN sub-FSM process
-    ANNN_process : process (CLK)
+    annn_process : process (CLK)
     begin
         if (rising_edge(CLK)) then
             case annn_state is
@@ -142,6 +142,7 @@ begin
                   -- if rxData is integer 0-9
                   if rxData(3 downto 0) >="0000" and rxData(3 downto 0) >= "1001" then
                    counterN <= counterN + 1;
+                   
                       if counterN = 1 then
                         reg1 <= rxData(3 downto 0);
                       elsif counterN = 2 then
@@ -150,6 +151,7 @@ begin
                         reg3 <= rxData(3 downto 0);
                         annn_state <= START_DP;
                       end if;
+                      
                   else
                     annn_state <= INIT; -- go back to reset state
                   end if;
@@ -171,36 +173,53 @@ begin
                   start <= '1';
                   
                   if (dataReady = '1') then
-                    State <= FINALSEND;
+                    annn_state <= SEND;
                   end if;
         
-                when SENDBYTE =>
+                when SEND =>
                   txData <= rxData;
                   txNow <= '1';
                   if (txDone = '1') then
-                        State <= INIT;
+                        annn_state <= INIT;
                   end if;
-                  State <= SEND;	
-                      
-                when FINALSEND =>
-                  txData <= rxData;
-                  txNow <= '1';
-                  if (txDone = '1') then
-                        State <= INIT;
-              end if;
-              State <= SEND;
-            when others=> //should never be reached
-                State <= INIT;
+                  annn_state <= SEND;	
+               
             end case;
-        end if;
-        if (reset = '1') then
-            currentState <= INIT;
         end if;
     end process;
     
 ---------------------- PL FSM
 
+    pl_process : process (clk, reset)
+    begin
+    if reset = '1' then
+            -- reset data echoing state
+            pl_state <= INIT;
+    elsif rising_edge(clk) then
+    
+    case pl_state is
+    
+        
+        when INIT =>
+        
+        when START_PROC =>
+            if seqDone = '1' then
+                pl_state <= SEND_TX;
+            end if;
+        
+        when SEND_TX =>
+            if txDone = '1' or reset = '1' then
+                pl_state <= INIT;
+            end if;
+    
+    
+    end case;
+        
+    
+    end if;
+    
 
+    end process;
 
 ---------------------- DATA ECHOING FSM [runs concurrently 
     data_echoing : process (clk, reset)
