@@ -57,6 +57,12 @@ architecture Behavioral of cmdProc is
     signal counterN : integer range 0 to 3 := 0; -- to validate ANNN input
     signal reg1, reg2, reg3 : BCD_ARRAY_TYPE(BCD_WORD_LENGTH-1 downto 0) := (others => "0000"); -- to store "NNN" as BCD
     
+    constant lowerp : std_logic_vector (7 downto 0) := "01110000";
+    constant upperp : std_logic_vector (7 downto 0) := "01010000";
+    constant lowerl : std_logic_vector (7 downto 0) := "01101100";
+    constant upperl : std_logic_vector (7 downto 0) := "01001100";
+
+
     -- enumeration of ascii integer 0-9
     --type ascii_integer is (00110000, 00110001, 00110010, 00110011, 00110100, 00110101, 00110110, 00110111, 00111000, 00111001);
 --    constant d0 : std_logic_vector (7 downto 0) := "00110000";
@@ -201,13 +207,20 @@ begin
     
         
         when INIT =>
+            if (ovErr = '0') and (framErr = '0') and (rxNow = '1') and 
+            ((rxData = lowerp) or (rxData = upperp) or (rxData = lowerl) or (rxData = upperl)) then
+                pl_state <= START_PROC;
+            end if;
         
         when START_PROC =>
+            rxDone <= '1';
+            start <= '1';
             if seqDone = '1' then
                 pl_state <= SEND_TX;
             end if;
         
         when SEND_TX =>
+            txNow <= '1'; -- SEND data
             if txDone = '1' or reset = '1' then
                 pl_state <= INIT;
             end if;
