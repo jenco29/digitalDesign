@@ -61,20 +61,8 @@ architecture Behavioral of cmdProc is
     constant upperp : std_logic_vector (7 downto 0) := "01010000";
     constant lowerl : std_logic_vector (7 downto 0) := "01101100";
     constant upperl : std_logic_vector (7 downto 0) := "01001100";
-
-
-    -- enumeration of ascii integer 0-9
-    --type ascii_integer is (00110000, 00110001, 00110010, 00110011, 00110100, 00110101, 00110110, 00110111, 00111000, 00111001);
---    constant d0 : std_logic_vector (7 downto 0) := "00110000";
---    constant d1 : std_logic_vector (7 downto 0) := "00110001";
---    constant d2 : std_logic_vector (7 downto 0) := "00110010";
---    constant d3 : std_logic_vector (7 downto 0) := "00110011";
---    constant d4 : std_logic_vector (7 downto 0) := "00110100";
---    constant d5 : std_logic_vector (7 downto 0) := "00110101";
---    constant d6 : std_logic_vector (7 downto 0) := "00110110";
---    constant d7 : std_logic_vector (7 downto 0) := "00110111";
---    constant d8 : std_logic_vector (7 downto 0) := "00111000";
---    constant d9 : std_logic_vector (7 downto 0) := "00111001";
+    constant lowera : std_logic_vector (7 downto 0) := "01100001";
+    constant uppera : std_logic_vector (7 downto 0) := "01000001";
     
 begin
 
@@ -102,10 +90,11 @@ begin
                 
                     if rxNow = '1' then
                         -- if 'a' or 'A' input
-                        if rxData = "01000001" or rxData = "01100001" then 
+                        if rxData = lowera or rxData = uppera then 
                             top_state <= ANNN;  
                         -- if 'l' or 'L' or 'p' or 'P' input
-                        elsif rxData = "01001100" or rxData = "01101000" or rxData = "01010000" or rxData = "01110000" then
+                        elsif rxData = lowerl or rxData = upperl or 
+                        rxData = lowerp or rxData = upperp then
                             top_state <= PL;
                         else
                             top_state <= INIT;
@@ -119,6 +108,12 @@ begin
                 when ANNN =>
                     if annn_state = INIT then
                         top_state <= INIT;
+                        
+                    -- if 'p' or 'l' input during CHECK_NNN state then change top level state to PL
+                    elsif (annn_state = CHECK_NNN) and 
+                    (rxData = lowerp or rxData = upperp or
+                    rxData = lowerl or rxData = upperl) then
+                        top_state <= PL;
                     end if;      
             end case;
         
@@ -130,13 +125,10 @@ begin
     -------------------- ANNN sub-FSM process
     annn_process : process (CLK)
     begin
-        if (rising_edge(CLK)) then
+        if (rising_edge(CLK) and top_state = ANNN) then
             case annn_state is
             
                 when INIT => -- initial state
-                --txdone <= '0';
-                    
-                    
                     
                     if (rxNow = '1') and (ovErr = '0') and (framErr = '0') and (rxData = "01000001" or rxData = "01100001") then -- received 'a' or 'A' in ascii
                         annn_state <= CHECK_NNN;
