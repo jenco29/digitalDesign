@@ -11,6 +11,7 @@ use work.common_pack.all;
 --library UNISIM;
 --use UNISIM.VComponents.all;
 
+
 entity cmdProc is
     Port (       
       clk:	in std_logic;
@@ -28,7 +29,7 @@ entity cmdProc is
       txDone: in std_logic;
       
       start: out std_logic;
-      numWords_bcd: out BCD_ARRAY_TYPE(2 downto 0);
+      numWords_bcd: out BCD_ARRAY_TYPE(11 downto 0);
       dataReady: in std_logic;
       byte: in std_logic_vector(7 downto 0);
       maxIndex: in BCD_ARRAY_TYPE(2 downto 0);
@@ -36,7 +37,26 @@ entity cmdProc is
       seqDone: in std_logic);
 end cmdProc;
 
+
 architecture Behavioral of cmdProc is
+function to_bcd(value : integer) return BCD_ARRAY_TYPE is
+    variable bcd : BCD_ARRAY_TYPE;
+begin
+    case value is
+        when 0 => bcd := (others => '0');
+        when 1 => bcd := "0001";
+        when 2 => bcd := "0010";
+        when 3 => bcd := "0011";
+        when 4 => bcd := "0100";
+        when 5 => bcd := "0101";
+        when 6 => bcd := "0110";
+        when 7 => bcd := "0111";
+        when 8 => bcd := "1000";
+        when 9 => bcd := "1001";
+        when others => bcd := (others => '0');
+    end case;
+    return bcd;
+end function;
 
 -----------defining different state types for top-level FSM
 
@@ -55,7 +75,7 @@ architecture Behavioral of cmdProc is
     
     -- counters and register declarations
     signal counterN : integer range 0 to 3 := 0; -- to validate ANNN input
-    signal reg1, reg2, reg3 : BCD_ARRAY_TYPE(BCD_WORD_LENGTH-1 downto 0) := (others => "0000"); -- to store "NNN" as BCD
+    signal reg1, reg2, reg3, rxSignal : BCD_ARRAY_TYPE(3 downto 0) := (others => "0000"); -- to store "NNN" as BCD
     
     constant lowerp : std_logic_vector (7 downto 0) := "01110000";
     constant upperp : std_logic_vector (7 downto 0) := "01010000";
@@ -65,6 +85,7 @@ architecture Behavioral of cmdProc is
     constant uppera : std_logic_vector (7 downto 0) := "01000001";
     
 begin
+
 
 --------------------------- TOP LEVEL FSM
 
@@ -125,10 +146,13 @@ begin
     -------------------- ANNN sub-FSM process
     annn_process : process (CLK)
     begin
-        if (rising_edge(CLK) and top_state = ANNN) then
+        if (rising_edge(CLK)) then
             case annn_state is
             
                 when INIT => -- initial state
+                --txdone <= '0';
+                    
+                    
                     
                     if (rxNow = '1') and (ovErr = '0') and (framErr = '0') and (rxData = "01000001" or rxData = "01100001") then -- received 'a' or 'A' in ascii
                         annn_state <= CHECK_NNN;
@@ -141,33 +165,63 @@ begin
                   if rxData(3 downto 0) >="0000" and rxData(3 downto 0) >= "1001" then
                    counterN <= counterN + 1;
                    
+                   case rxData(3 downto 0) is
+                   WHEN "0000" =>
+                   
+                    rxSignal <= (others=>"0000");
+                    
+                   WHEN "0001" =>
+                   
+                    rxSignal <= to_bcd(1);
+                    
+                   WHEN "0010" =>
+                    rxSignal <= to_bcd(2);
+                    
+                   WHEN "0011" =>
+                   
+                    rxSignal <= to_bcd(3);
+                    
+                   WHEN "0100" =>
+                    rxSignal <= to_bcd(4);
+                    
+                   WHEN "0101" =>
+                   
+                    rxSignal <= to_bcd(5);
+                    
+                   WHEN "0110" =>
+                    rxSignal <= to_bcd(6);
+                   
+                   WHEN "0111" =>
+                   
+                    rxSignal <= to_bcd(7);
+                    
+                   WHEN "1000" =>
+                    rxSignal <= to_bcd(8);
+                   
+                   WHEN "1001" =>
+                    rxSignal <= to_bcd(9);
+                   
+                   end case;
+                   
+                 
                       if counterN = 1 then
-                        reg1 <= rxData(3 downto 0);
+                        reg1 <= rxSignal;
                       elsif counterN = 2 then
-                        reg2 <= rxData(3 downto 0);
+                        reg2 <= rxSignal;
                       elsif counterN = 3 then
-                        reg3 <= rxData(3 downto 0);
+                        reg3 <= rxSignal;
                         annn_state <= START_DP;
+                      else
+                        annn_state <= INIT;
                       end if;
                       
                   else
                     annn_state <= INIT; -- go back to reset state
                   end if;
-                  
---                  case rxData is
---                  -- when rxData is an integer
---                    when d0 | d1 | d2 | d3 | d4 | d5 | d6 | d7 | d8 | d9 =>
-                      
-                      
---                    when others => --when input is not integer
---                      annn_state <= INIT; -- go back to reset state
-                      
---                  end case;
-                  
 
                 when START_DP =>
                 
-                  numWords_bcd <= CONCAT(reg1, reg2, reg3); -- concatenate 
+                  numWords_bcd <= reg1 & reg2 & reg3; -- concatenate 
                   start <= '1';
                   
                   if (dataReady = '1') then
