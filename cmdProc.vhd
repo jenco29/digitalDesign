@@ -30,15 +30,16 @@ entity cmdProc is
       
       start: out std_logic;
       numWords_bcd: out BCD_ARRAY_TYPE(11 downto 0);
-      dataReady: in std_logic;
+      dataReady: in std_logic; -- Data is valid when dataReady is high
       byte: in std_logic_vector(7 downto 0);
-      maxIndex: in BCD_ARRAY_TYPE(2 downto 0);
-      dataResults: in CHAR_ARRAY_TYPE(0 to RESULT_BYTE_NUM-1);
+      maxIndex: in BCD_ARRAY_TYPE(2 downto 0); --Contains the index of the peak byte in BCD format.
+      dataResults: in CHAR_ARRAY_TYPE(0 to RESULT_BYTE_NUM-1); -- need for L command
       seqDone: in std_logic);
 end cmdProc;
 
 
 architecture Behavioral of cmdProc is
+
 function to_bcd(value : integer) return BCD_ARRAY_TYPE is
     variable bcd : BCD_ARRAY_TYPE(0 to 0);
 begin
@@ -67,7 +68,7 @@ end function;
     type data_echo_state_type is (INIT, ECHO); -- is this necessary
     signal data_echo_state : data_echo_state_type := INIT;
     
-    type pl_state_type is (INIT, START_PROC, SEND_TX);
+    type pl_state_type is (INIT, PEAK, LIST);
     signal pl_state : pl_state_type := INIT;
     signal next_pl_state : pl_state_type := INIT;
     
@@ -78,13 +79,16 @@ end function;
     -- counters and register declarations
     signal counterN : integer range 0 to 3 := 0; -- to validate ANNN input
     signal reg1, reg2, reg3, rxSignal : BCD_ARRAY_TYPE(3 downto 0) := (others => "0000"); -- N registers, and rxSignal to convert binary to BCD
+    signal peakSent, indexSent, spaceSent : bit := '0';
     
+    -- constants of symbols in ASCII binary code
     constant lowerp : std_logic_vector (7 downto 0) := "01110000";
     constant upperp : std_logic_vector (7 downto 0) := "01010000";
     constant lowerl : std_logic_vector (7 downto 0) := "01101100";
     constant upperl : std_logic_vector (7 downto 0) := "01001100";
     constant lowera : std_logic_vector (7 downto 0) := "01100001";
     constant uppera : std_logic_vector (7 downto 0) := "01000001";
+    constant space : std_logic_vector (7 downto 0) := "00100000";
     
 begin
 
@@ -109,7 +113,11 @@ begin
                     txNow <= '0';
                     start <= '0';
                     rxDone <= '0';
+                    txdata <= (others => '0');
+                    rxSignal <= (others => "0000");
                     numWords_bcd <= (others => "0"); -- add reset
+                    peakSent <= '0';
+                    indexSent <= '0';
                 
                     if rxNow = '1' then
                         -- if 'a' or 'A' input
@@ -150,6 +158,7 @@ begin
     -------------------- ANNN sub-FSM process
     annn_process : process (clk)
     begin
+    next_annn_state <= annn_state;
         if (rising_edge(clk)) then
             case annn_state is
             
@@ -236,9 +245,9 @@ begin
                   end if;
         
                 when SEND =>
-                  txData <= rxData;
-                  txNow <= '1';
-                  if (txDone = '1') then
+                  txData <= byte; -- send byte from data proc to Tx
+                  txNow <= '1'; --send
+                  if (txDone = '1' and seqDone = '1' and dataReady = '1') then --if
                         next_annn_state <= INIT;
                   end if;
                   next_annn_state <= SEND;	
@@ -253,33 +262,46 @@ begin
 
     pl_process : process (clk, reset)
     begin
+    next_pl_state <= pl_state;
     if reset = '1' then
             -- reset data echoing state
-            pl_state <= INIT;
+            next_pl_state <= INIT;
+            
     elsif rising_edge(clk) then
     
     case pl_state is
     
-        
         when INIT =>
             if (ovErr = '0') and (framErr = '0') and (rxNow = '1') and 
-            ((rxData = lowerp) or (rxData = upperp) or (rxData = lowerl) or (rxData = upperl)) then
-                next_pl_state <= START_PROC;
+            ((rxData = lowerp) or (rxData = upperp)) then -- command is PEAK
+                next_pl_state <= PEAK;
+            
+            
+             elsif (ovErr = '0') and (framErr = '0') and (rxNow = '1') and 
+            ((rxData = lowerl) or (rxData = upperl)) then -- command is LIST
+                next_pl_state <= LIST;
             end if;
         
-        when START_PROC =>
-            rxDone <= '1';
-            start <= '1';
-            if seqDone = '1' then
-                next_pl_state <= SEND_TX;
-            end if;
-        
-        when SEND_TX =>
-            txNow <= '1'; -- SEND data
-            if txDone = '1' or reset = '1' then
+        when PEAK =>
+            
+            if peakSent = '0' and indexSent = '0' and spaceSent = 0 then
+            --send peak value from dataResults
+            
+            peakSent <= '1';
+            
+            elsif peakSent = '1' and indexSent = '0' and spaceSent = 0 then
+            --send space
+            
+            spaceSenta = '1';
+            
+            elsif peakSent = '1' and indexSent = '0' and spaceSent = 1 then
+            
+            else 
                 next_pl_state <= INIT;
-            end if;
-    
+            
+            
+        when LIST =>
+            
     
     end case;
         
