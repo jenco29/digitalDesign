@@ -1,6 +1,7 @@
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use work.common_pack.all;
+use IEEE.NUMERIC_STD.ALL;
 
 -- Uncomment the following library declaration if using
 -- arithmetic functions with Signed or Unsigned values
@@ -29,7 +30,7 @@ entity cmdProc is
       txDone: in std_logic;
       
       start: out std_logic;
-      numWords_bcd: out BCD_ARRAY_TYPE(11 downto 0);
+      numWords_bcd: out BCD_ARRAY_TYPE(2 downto 0);
       dataReady: in std_logic; -- Data is valid when dataReady is high
       byte: in std_logic_vector(7 downto 0);
       maxIndex: in BCD_ARRAY_TYPE(2 downto 0); --Contains the index of the peak byte in BCD format.
@@ -80,6 +81,9 @@ end function;
     signal counterN : integer range 0 to 3 := 0; -- to validate ANNN input
     signal reg1, reg2, reg3, rxSignal : BCD_ARRAY_TYPE(3 downto 0) := (others => "0000"); -- N registers, and rxSignal to convert binary to BCD
     signal peakSent, indexSent, spaceSent : bit := '0';
+    type INT_ARRAY is array (integer range<>) of integer;
+    signal bcd_sum : INT_ARRAY(2 downto 0);
+    signal index_reg : integer range 0 to SEQ_LENGTH - 1;
     
     -- constants of symbols in ASCII binary code
     constant lowerp : std_logic_vector (7 downto 0) := "01110000";
@@ -89,6 +93,7 @@ end function;
     constant lowera : std_logic_vector (7 downto 0) := "01100001";
     constant uppera : std_logic_vector (7 downto 0) := "01000001";
     constant space : std_logic_vector (7 downto 0) := "00100000";
+    constant foo : unsigned (7 downto 0) := x"39";
     
 begin
 
@@ -165,8 +170,6 @@ begin
                 when INIT => -- initial state
                 --txdone <= '0';
                     
-                    
-                    
                     if (rxNow = '1') and (ovErr = '0') and (framErr = '0') and (rxData = "01000001" or rxData = "01100001") then -- received 'a' or 'A' in ascii
                         next_annn_state <= CHECK_NNN;
                     end if;
@@ -219,18 +222,6 @@ begin
                    
                    end case;
                    
-                 
-                      if counterN = 1 then
-                        reg1 <= rxSignal;
-                      elsif counterN = 2 then
-                        reg2 <= rxSignal;
-                      elsif counterN = 3 then
-                        reg3 <= rxSignal;
-                        annn_state <= START_DP;
-                      else
-                        next_annn_state <= INIT;
-                      end if;
-                      
                   else
                     next_annn_state <= INIT; -- go back to reset state
                   end if;
@@ -256,6 +247,27 @@ begin
         end if;
         
         annn_state <= next_annn_state;
+    end process;
+    
+    ------------------------------- REG process to update registers
+    
+    reg_process : process (clk)
+    begin
+        if rising_edge(clk) then
+            if reset = '1' then
+                reg1 <= (others => "0000");
+                reg2 <= (others => "0000");
+                reg3 <= (others => "0000");
+            elsif annn_state = CHECK_NNN then
+                if counterN = 1 then
+                    reg1 <= rxSignal;
+                elsif counterN = 2 then
+                    reg2 <= rxSignal;
+                elsif counterN = 3 then
+                    reg3 <= rxSignal;
+                end if;
+            end if;
+        end if;
     end process;
     
 ---------------------- PL FSM
@@ -284,24 +296,35 @@ begin
         
         when PEAK =>
             
-            if peakSent = '0' and indexSent = '0' and spaceSent = 0 then
+            if peakSent = '0' and indexSent = '0' and spaceSent = '0' then
             --send peak value from dataResults
+                txData <= dataResults(4); -- ???
+                peakSent <= '1';
             
-            peakSent <= '1';
-            
-            elsif peakSent = '1' and indexSent = '0' and spaceSent = 0 then
+            elsif peakSent = '1' and indexSent = '0' and spaceSent = '0' then
             --send space
+                txData <= space;
+                spaceSent <= '1';
             
-            spaceSenta = '1';
-            
-            elsif peakSent = '1' and indexSent = '0' and spaceSent = 1 then
-            
-            else 
+            elsif peakSent = '1' and indexSent = '0' and spaceSent = '1' then
+            --send maxIndex
+                -- convert maxIndex into array of std_logic_vector
+                
+                bcd_sum(0) <= to_integer(signed(maxIndex(0))) * 100;
+                bcd_sum(1) <= to_integer(signed(maxIndex(1))) * 10;
+                bcd_sum(2) <= to_integer(signed(maxIndex(2)));
+                index_reg <= bcd_sum(0) + bcd_sum(1) + bcd_sum(2); -- store converted BCD as integer in index_reg
+                
+                
+                
+            else
                 next_pl_state <= INIT;
             
+            end if;
             
         when LIST =>
             
+        
     
     end case;
         
