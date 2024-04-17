@@ -88,7 +88,7 @@ begin
       wait until tbCount=2; -- wait a few clock cycles after reset
       numWords <=(X"5",X"0",X"0"); -- 500
       start <= '1';
-      wait until seqDone='1';
+      wait until seqDone='1'; --us
       start <='0';
       curCount:= tbCount;
       wait until tbCount=curCount+10; -- wait for a few clock cycles
