@@ -1,158 +1,326 @@
-----------------------------------------------------------------------------
---	UART_TX_CTRL.vhd -- UART Data Transfer Component
-----------------------------------------------------------------------------
--- Author:  Sam Bobrowicz
---          Copyright 2011 Digilent, Inc.
-----------------------------------------------------------------------------
---
-----------------------------------------------------------------------------
---	This component may be used to transfer data over a UART device. It will
--- serialize a byte of data and transmit it over a TXD line. The serialized
--- data has the following characteristics:
---         *9600 Baud Rate
---         *8 data bits, LSB first
---         *1 stop bit
---         *no parity
---         				
--- Port Descriptions:
---
---    SEND - Used to trigger a send operation. The upper layer logic should 
---           set this signal high for a single clock cycle to trigger a 
---           send. When this signal is set high DATA must be valid . Should 
---           not be asserted unless READY is high.
---    DATA - The parallel data to be sent. Must be valid the clock cycle
---           that SEND has gone high.
---    CLK  - A 100 MHz clock is expected
---   READY - This signal goes low once a send operation has begun and
---           remains low until it has completed and the module is ready to
---           send another byte.
--- UART_TX - This signal should be routed to the appropriate TX pin of the 
---           external UART device.
---   
-----------------------------------------------------------------------------
---
-----------------------------------------------------------------------------
--- Revision History:
---  08/08/2011(SamB): Created using Xilinx Tools 13.2
-----------------------------------------------------------------------------
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
-use IEEE.std_logic_unsigned.all;
+use work.common_pack.all;
 
-entity UART_TX_CTRL is
-    Port ( SEND : in  STD_LOGIC;
-           DATA : in  STD_LOGIC_VECTOR (7 downto 0);
-           CLK : in  STD_LOGIC;
-           READY : out  STD_LOGIC;
-           UART_TX : out  STD_LOGIC);
-end UART_TX_CTRL;
+-- Uncomment the following library declaration if using
+-- arithmetic functions with Signed or Unsigned values
+--use IEEE.NUMERIC_STD.ALL;
 
-architecture Behavioral of UART_TX_CTRL is
+-- Uncomment the following library declaration if instantiating
+-- any Xilinx leaf cells in this code.
+--library UNISIM;
+--use UNISIM.VComponents.all;
 
-type TX_STATE_TYPE is (RDY, LOAD_BIT, SEND_BIT);
 
-constant BIT_TMR_MAX : std_logic_vector(13 downto 0) := "10100010110000"; --10416 = (round(100MHz / 9600)) - 1
-constant BIT_INDEX_MAX : natural := 10;
+entity cmdProc is
+    Port (       
+      clk:	in std_logic;
+      reset: in std_logic;
+      
+      rxNow: in std_logic; -- valid
+      rxData: in std_logic_vector (7 downto 0); -- rx data
+      rxDone: out std_logic; --rx done
+      
+      ovErr: in std_logic;
+      framErr:	in std_logic;
+      
+      txData: out std_logic_vector (7 downto 0);
+      txNow: out std_logic;
+      txDone: in std_logic;
+      
+      start: out std_logic;
+      numWords_bcd: out BCD_ARRAY_TYPE(11 downto 0);
+      dataReady: in std_logic;
+      byte: in std_logic_vector(7 downto 0);
+      maxIndex: in BCD_ARRAY_TYPE(2 downto 0);
+      dataResults: in CHAR_ARRAY_TYPE(0 to RESULT_BYTE_NUM-1);
+      seqDone: in std_logic);
+end cmdProc;
 
---Counter that keeps track of the number of clock cycles the current bit has been held stable over the
---UART TX line. It is used to signal when the next bit should be transmitted
-signal bitTmr : std_logic_vector(13 downto 0) := (others => '0');
 
---combinatorial logic that goes high when bitTmr has counted to the proper value to ensure
---a 9600 baud rate
-signal bitDone : std_logic;
+architecture Behavioral of cmdProc is
+function to_bcd(value : integer) return BCD_ARRAY_TYPE is
+    variable bcd : BCD_ARRAY_TYPE(0 to 0);
+begin
+    case value is
+        when 0 => bcd(0) := "0000";
+        when 1 => bcd(0) := "0001";
+        when 2 => bcd(0) := "0010";
+        when 3 => bcd(0) := "0011";
+        when 4 => bcd(0) := "0100";
+        when 5 => bcd(0) := "0101";
+        when 6 => bcd(0) := "0110";
+        when 7 => bcd(0) := "0111";
+        when 8 => bcd(0) := "1000";
+        when 9 => bcd(0) := "1001";
+        when others => bcd(0) := "0000";
+    end case;
+    return bcd;
+end function;
 
---Contains the index of the next bit in txData that needs to be transferred 
-signal bitIndex : natural;
+-----------defining different state types for top-level FSM
 
---a register that holds the current data being sent over the UART TX line
-signal txBit : std_logic := '1';
+    type top_state_type is (INIT, PL, ANNN);
+    signal top_state : top_state_type := INIT;
 
---A register that contains the whole data packet to be sent, including start and stop bits. 
-signal txData : std_logic_vector(9 downto 0);
 
-signal txState : TX_STATE_TYPE := RDY;
-
+    type data_echo_state_type is (INIT, ECHO); -- is this necessary
+    signal data_echo_state : data_echo_state_type := INIT;
+    
+    type pl_state_type is (INIT, START_PROC, SEND_TX);
+    signal pl_state : pl_state_type := INIT;
+    signal next_pl_state : pl_state_type := INIT;
+    
+    type annn_state_type is (INIT, CHECK_NNN, START_DP, SEND);
+    signal annn_state : annn_state_type := INIT;
+    signal next_annn_state : ANNN_state_type := INIT;
+    
+    -- counters and register declarations
+    signal counterN : integer range 0 to 3 := 0; -- to validate ANNN input
+    signal reg1, reg2, reg3, rxSignal : BCD_ARRAY_TYPE(3 downto 0) := (others => "0000"); -- N registers, and rxSignal to convert binary to BCD
+    
+    constant lowerp : std_logic_vector (7 downto 0) := "01110000";
+    constant upperp : std_logic_vector (7 downto 0) := "01010000";
+    constant lowerl : std_logic_vector (7 downto 0) := "01101100";
+    constant upperl : std_logic_vector (7 downto 0) := "01001100";
+    constant lowera : std_logic_vector (7 downto 0) := "01100001";
+    constant uppera : std_logic_vector (7 downto 0) := "01000001";
+    
 begin
 
---Next state logic
-next_txState_process : process (CLK)
-begin
-	if (rising_edge(CLK)) then
-		case txState is 
-		when RDY =>
-			if (SEND = '1') then
-				txState <= LOAD_BIT;
-			end if;
-		when LOAD_BIT =>
-			txState <= SEND_BIT;
-		when SEND_BIT =>
-			if (bitDone = '1') then
-				if (bitIndex = BIT_INDEX_MAX) then
-					txState <= RDY;
-				else
-					txState <= LOAD_BIT;
-				end if;
-			end if;
-		when others=> --should never be reached
-			txState <= RDY;
-		end case;
-	end if;
-end process;
 
-bit_timing_process : process (CLK)
-begin
-	if (rising_edge(CLK)) then
-		if (txState = RDY) then
-			bitTmr <= (others => '0');
-		else
-			if (bitDone = '1') then
-				bitTmr <= (others => '0');
-			else
-				bitTmr <= bitTmr + 1;
-			end if;
-		end if;
-	end if;
-end process;
+--------------------------- TOP LEVEL FSM
 
-bitDone <= '1' when (bitTmr = BIT_TMR_MAX) else
-				'0';
+    top_fsm : process (clk, reset)
+    begin
+    
+        if reset = '1' then
+            top_state <= INIT;
+            --reset to init
+            
+        elsif rising_edge(clk) then
+            case top_state is
+                when INIT =>
+                    -- init all counters and registers again as 0
+                    reg1 <= (others => "0000");
+                    reg2 <= (others => "0000");
+                    reg3 <= (others => "0000");
+                    counterN <= 0;
+                    txNow <= '0';
+                    start <= '0';
+                    rxDone <= '0';
+                    numWords_bcd <= (others => "0"); -- add reset
+                
+                    if rxNow = '1' then
+                        -- if 'a' or 'A' input
+                        if rxData = lowera or rxData = uppera then 
+                            top_state <= ANNN;  
+                        -- if 'l' or 'L' or 'p' or 'P' input
+                        elsif rxData = lowerl or rxData = upperl or 
+                        rxData = lowerp or rxData = upperp then
+                            top_state <= PL;
+                        else
+                            top_state <= INIT;
+                        end if;
+                    end if;
+                
+                when PL =>
+                    if pl_state = INIT then
+                        top_state <= INIT;
+                    end if;
+                when ANNN =>
+                    if annn_state = INIT then
+                        top_state <= INIT;
+                        
+                    -- if 'p' or 'l' input during CHECK_NNN state then change top level state to PL
+                    elsif (annn_state = CHECK_NNN) and 
+                    (rxData = lowerp or rxData = upperp or
+                    rxData = lowerl or rxData = upperl) then
+                        top_state <= PL;
+                    end if;   
+                when others =>
+                    top_state <= INIT;
+            end case;
+        
+        end if;
+    
+    end process; --end top-level fsm
+    
 
-bit_counting_process : process (CLK)
-begin
-	if (rising_edge(CLK)) then
-		if (txState = RDY) then
-			bitIndex <= 0;
-		elsif (txState = LOAD_BIT) then
-			bitIndex <= bitIndex + 1;
-		end if;
-	end if;
-end process;
+    -------------------- ANNN sub-FSM process
+    annn_process : process (clk)
+    begin
+        if (rising_edge(clk)) then
+            case annn_state is
+            
+                when INIT => -- initial state
+                --txdone <= '0';
+                    
+                    
+                    
+                    if (rxNow = '1') and (ovErr = '0') and (framErr = '0') and (rxData = "01000001" or rxData = "01100001") then -- received 'a' or 'A' in ascii
+                        next_annn_state <= CHECK_NNN;
+                    end if;
+            
+                when CHECK_NNN => -- check input after 'a/A' is 3 integers between 0-9
+                
+                  rxDone <= '1'; -- for one cycle
+                  -- if rxData is integer 0-9
+                  if rxData(3 downto 0) >="0000" and rxData(3 downto 0) >= "1001" then
+                   counterN <= counterN + 1;
+                   
+                   case rxData(3 downto 0) is
+                   when "0000" =>
+                   
+                    rxSignal <= (others=>"0000");
+                    
+                   when "0001" =>
+                   
+                    rxSignal <= to_bcd(1);
+                    
+                   when "0010" =>
+                    rxSignal <= to_bcd(2);
+                    
+                   when "0011" =>
+                   
+                    rxSignal <= to_bcd(3);
+                    
+                   when "0100" =>
+                    rxSignal <= to_bcd(4);
+                    
+                   when "0101" =>
+                   
+                    rxSignal <= to_bcd(5);
+                    
+                   when "0110" =>
+                    rxSignal <= to_bcd(6);
+                   
+                   when "0111" =>
+                   
+                    rxSignal <= to_bcd(7);
+                    
+                   when "1000" =>
+                    rxSignal <= to_bcd(8);
+                   
+                   when "1001" =>
+                    rxSignal <= to_bcd(9);
+                    
+                   when others =>
+                    rxSignal <= to_bcd(0); -- edge case
+                   
+                   end case;
+                   
+                 
+                      if counterN = 1 then
+                        reg1 <= rxSignal;
+                      elsif counterN = 2 then
+                        reg2 <= rxSignal;
+                      elsif counterN = 3 then
+                        reg3 <= rxSignal;
+                        annn_state <= START_DP;
+                      else
+                        next_annn_state <= INIT;
+                      end if;
+                      
+                  else
+                    next_annn_state <= INIT; -- go back to reset state
+                  end if;
 
-tx_data_latch_process : process (CLK)
-begin
-	if (rising_edge(CLK)) then
-		if (SEND = '1') then
-			txData <= '1' & DATA & '0';
-		end if;
-	end if;
-end process;
+                when START_DP =>
+                
+                  numWords_bcd <= reg1 & reg2 & reg3; -- concatenate 
+                  start <= '1';
+                  
+                  if (dataReady = '1') then
+                    next_annn_state <= SEND;
+                  end if;
+        
+                when SEND =>
+                  txData <= rxData;
+                  txNow <= '1';
+                  if (txDone = '1') then
+                        next_annn_state <= INIT;
+                  end if;
+                  next_annn_state <= SEND;	
+               
+            end case;
+        end if;
+        
+        annn_state <= next_annn_state;
+    end process;
+    
+---------------------- PL FSM
 
-tx_bit_process : process (CLK)
-begin
-	if (rising_edge(CLK)) then
-		if (txState = RDY) then
-			txBit <= '1';
-		elsif (txState = LOAD_BIT) then
-			txBit <= txData(bitIndex);
-		end if;
-	end if;
-end process;
+    pl_process : process (clk, reset)
+    begin
+    if reset = '1' then
+            -- reset data echoing state
+            pl_state <= INIT;
+    elsif rising_edge(clk) then
+    
+    case pl_state is
+    
+        
+        when INIT =>
+            if (ovErr = '0') and (framErr = '0') and (rxNow = '1') and 
+            ((rxData = lowerp) or (rxData = upperp) or (rxData = lowerl) or (rxData = upperl)) then
+                next_pl_state <= START_PROC;
+            end if;
+        
+        when START_PROC =>
+            rxDone <= '1';
+            start <= '1';
+            if seqDone = '1' then
+                next_pl_state <= SEND_TX;
+            end if;
+        
+        when SEND_TX =>
+            txNow <= '1'; -- SEND data
+            if txDone = '1' or reset = '1' then
+                next_pl_state <= INIT;
+            end if;
+    
+    
+    end case;
+        
+    
+    end if;
+    
+    pl_state <= next_pl_state;
 
-UART_TX <= txBit;
-READY <= '1' when (txState = RDY) else
-			'0';
+    end process;
+
+---------------------- DATA ECHOING FSM [runs concurrently 
+    data_echoing : process (clk, reset)
+    begin
+        if reset = '1' then
+            -- reset data echoing state
+            data_echo_state <= INIT;
+        
+        elsif rising_edge(clk) then
+        
+        case data_echo_state is
+        
+            when INIT =>
+                rxDone <= '0';
+                -- reset registers etc
+                
+                if rxNow = '1' then
+                    data_echo_state <= ECHO;
+                end if;
+            when ECHO =>
+                txData <= rxData;
+                txNow <= '1';
+                
+                if txDone = '1' then
+                    data_echo_state <= INIT;
+                end if;
+                
+        end case;
+        end if;
+    end process;
+                
+            
+
 
 end Behavioral;
-
-
