@@ -84,6 +84,7 @@ end function;
     type INT_ARRAY is array (integer range<>) of integer;
     signal bcd_sum : INT_ARRAY(2 downto 0);
     signal index_reg : integer range 0 to SEQ_LENGTH - 1;
+    signal list_counter : integer range 0 to 6;
     
     -- constants of symbols in ASCII binary code
     constant lowerp : std_logic_vector (7 downto 0) := "01110000";
@@ -323,7 +324,17 @@ begin
             end if;
             
         when LIST =>
+            if list_counter < 7 then
+                
+                --send dataResults(list_counter)
             
+                list_counter <= list_counter + 1;
+            
+            else
+            
+               next_pl_state <= pl_state;
+               
+            end if;
         
     
     end case;
