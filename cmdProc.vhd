@@ -2,6 +2,7 @@ library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use work.common_pack.all;
 use IEEE.NUMERIC_STD.ALL;
+use IEEE.MATH_REAL.ALL;
 
 -- Uncomment the following library declaration if using
 -- arithmetic functions with Signed or Unsigned values
@@ -78,12 +79,13 @@ end function;
     signal next_annn_state : ANNN_state_type := INIT;
     
     -- counters and register declarations
-    signal counterN : integer range 0 to 3 := 0; -- to validate ANNN input
+    signal counterN, hex_counter : integer range 0 to 3 := 0; -- to validate ANNN input
     signal reg1, reg2, reg3, rxSignal : BCD_ARRAY_TYPE(3 downto 0) := (others => "0000"); -- N registers, and rxSignal to convert binary to BCD
     signal peakSent, indexSent, spaceSent : bit := '0';
     type INT_ARRAY is array (integer range<>) of integer;
     signal bcd_sum : INT_ARRAY(2 downto 0);
-    signal index_reg : integer range 0 to SEQ_LENGTH - 1;
+    signal index_reg : integer range 0 to 999 := 0;
+    signal index_binary : std_logic_vector(11 downto 0) := (others => '0');
     signal list_counter : integer range 0 to 6;
     
     -- constants of symbols in ASCII binary code
@@ -311,12 +313,30 @@ begin
             --send maxIndex
                 -- convert maxIndex into array of std_logic_vector
                 
-                bcd_sum(0) <= to_integer(signed(maxIndex(0))) * 100;
-                bcd_sum(1) <= to_integer(signed(maxIndex(1))) * 10;
-                bcd_sum(2) <= to_integer(signed(maxIndex(2)));
-                index_reg <= bcd_sum(0) + bcd_sum(1) + bcd_sum(2); -- store converted BCD as integer in index_reg
+                if hex_counter = 0 then
+                    
+                    bcd_sum(0) <= to_integer(signed(maxIndex(0))) * 100;
+                    bcd_sum(1) <= to_integer(signed(maxIndex(1))) * 10;
+                    bcd_sum(2) <= to_integer(signed(maxIndex(2)));
+                    index_reg <= bcd_sum(0) + bcd_sum(1) + bcd_sum(2); -- store converted BCD as integer in index_reg
+                    index_binary <= std_logic_vector(to_unsigned(index_reg, index_binary'length));
+                    
+                    if index_binary(0 to 3) = "0000" then
+                        hex_counter <= 1;
+                        if index_binary(4 to 7) = "0000" then
+                        hex_counter <= 2;
+                        
+                        txData = "
+                        
+                        end if;
+                        
+                    end if;
+                    
+                    
+                    
+                else hex_counter =
                 
-                
+               end if;
                 
             else
                 next_pl_state <= INIT;
