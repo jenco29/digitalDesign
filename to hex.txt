@@ -1,0 +1,22 @@
+-- function that returns ascii value of a hex
+function to_hex(value : integer) return std_logic_vector is
+    variable result : std_logic_vector(7 to 0);
+begin
+    case value is
+        when 0 => result := "01000000"; 
+        when 1 => result := "01000001"; 
+        when 2 => result := "01000010"; 
+        when 3 => result := "01000011"; 
+        when 4 => result := "00110100"; 
+        when 5 => result := "00110101"; 
+        when 6 => result := "00110110"; 
+        when 7 => result := "00110111"; 
+        when 8 => result := "00111000"; 
+        when 9 => result := "00111001"; 
+        when 10 => result := "01000010"; --A
+        when 11 => result := "01000010"; --B
+        when 12 => result := "01000011"; --C
+        when 13 => result := "01000100"; --D
+        when 14 => result := "01000101"; --E
+        when 15 => result := "01000110"; --F
+end function;
