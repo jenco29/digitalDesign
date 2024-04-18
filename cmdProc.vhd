@@ -61,6 +61,17 @@ begin
     return bcd;
 end function;
 
+function to_hex(value : std_logic_vector) return std_logic_vector is
+    variable result : std_logic_vector(7 downto 0);
+    begin
+    if value >= "0000" and value <= "1001" then
+        result := "0011" & value;
+    else
+        result := "0100" & value;
+    end if;
+    return result;
+ end function;
+
 -----------defining different state types for top-level FSM
 
     type top_state_type is (INIT, PL, ANNN);
