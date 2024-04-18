@@ -126,6 +126,7 @@ begin
                     numWords_bcd <= (others => "0"); -- add reset
                     peakSent <= '0';
                     indexSent <= '0';
+                    hex_counter <= 0;
                 
                     if rxNow = '1' then
                         -- if 'a' or 'A' input
@@ -324,17 +325,28 @@ begin
                     if index_binary(0 to 3) = "0000" then
                         hex_counter <= 1;
                         if index_binary(4 to 7) = "0000" then
-                        hex_counter <= 2;
+                            hex_counter <= 2;
+                            
+                            txData <= to_hex(index_binary(8 to 11));
                         
-                        txData = "
-                        
+                        else
+                            txData <= to_hex(index_binary(4 to 7));
                         end if;
+                 
+                    else
+                        txData <= to_hex(index_binary(0 to 3));
+                        hex_counter <= 1;
                         
                     end if;
                     
+                 txNow <= '1';
                     
-                    
-                else hex_counter =
+                elif hex_counter = 1 then
+                    txData <= to_hex(index_binary(4 to 7));
+                    hex_counter <= 2;
+                elif hex_counter = 2 then
+                    txData <= to_hex(index_binary(8 to 11));
+                    next_pl_state <= INIT;
                 
                end if;
                 
@@ -366,7 +378,7 @@ begin
 
     end process;
 
----------------------- DATA ECHOING FSM [runs concurrently 
+---------------------- DATA ECHOING FSM [runs concurrently
     data_echoing : process (clk, reset)
     begin
         if reset = '1' then
