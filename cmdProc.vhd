@@ -3,13 +3,17 @@ use IEEE.STD_LOGIC_1164.ALL;
 use work.common_pack.all;
 use IEEE.NUMERIC_STD.ALL;
 use IEEE.MATH_REAL.ALL;
+
 -- Uncomment the following library declaration if using
 -- arithmetic functions with Signed or Unsigned values
 --use IEEE.NUMERIC_STD.ALL;
+
 -- Uncomment the following library declaration if instantiating
 -- any Xilinx leaf cells in this code.
 --library UNISIM;
 --use UNISIM.VComponents.all;
+
+
 entity cmdProc is
     Port (       
       clk:	in std_logic;
@@ -34,7 +38,10 @@ entity cmdProc is
       dataResults: in CHAR_ARRAY_TYPE(0 to RESULT_BYTE_NUM-1); -- need for L command
       seqDone: in std_logic);
 end cmdProc;
+
+
 architecture Behavioral of cmdProc is
+
 function to_bcd(value : integer) return BCD_ARRAY_TYPE is
     variable bcd : BCD_ARRAY_TYPE(0 to 0);
 begin
@@ -59,28 +66,22 @@ function to_hex(value : std_logic_vector) return std_logic_vector is
     begin
     if value >= "0000" and value <= "1001" then
         result := "0011" & value;
+    elsif value = "1010" then -- 10
+        result := "01000001";
+    elsif value = "1011" then -- 11
+        result := "01000010";
+    elsif value = "1100" then -- 12
+        result := "01000011";
+    elsif value = "1101" then -- 13
+        result := "01000100";
+    elsif value = "1010" then -- 14
+        result := "01000101";
+    elsif value = "1011" then -- 15
+        result := "01000110";
     else
-        result := "0100" & value;
-    end if;
-    return result;
- end function;
- 
- 
-function byte_to_hex(value : std_logic_vector) return std_logic_vector is
-    variable result : std_logic_vector(7 downto 0);
-    begin
-    if value(3 downto 0) >= "0000" and value <= "1001" then
-        result := "0011" & value;
-    else
-        result := "0100" & value;
-    end if;
+        result := "00000000";
     
-    if value(3 downto 0) >= "0000" and value <= "1001" then
-        result := "0011" & value;
-    else
-        result := "0100" & value;
     end if;
-    
     return result;
  end function;
 
@@ -88,6 +89,8 @@ function byte_to_hex(value : std_logic_vector) return std_logic_vector is
 
     type top_state_type is (INIT, PL, ANNN);
     signal top_state : top_state_type := INIT;
+
+
     type data_echo_state_type is (INIT, ECHO); -- is this necessary
     signal data_echo_state : data_echo_state_type := INIT;
     
@@ -100,7 +103,7 @@ function byte_to_hex(value : std_logic_vector) return std_logic_vector is
     signal next_annn_state : ANNN_state_type := INIT;
     
     -- counters and register declarations
-    signal counterN, hex_counter : integer range 0 to 3 := 0; -- to validate ANNN input
+    signal counterN, index_counter : integer range 0 to 3 := 0; -- to validate ANNN input
     signal reg1, reg2, reg3, rxSignal : BCD_ARRAY_TYPE(3 downto 0) := (others => "0000"); -- N registers, and rxSignal to convert binary to BCD
     signal peakSent, indexSent, spaceSent : bit := '0';
     type INT_ARRAY is array (integer range<>) of integer;
@@ -108,6 +111,7 @@ function byte_to_hex(value : std_logic_vector) return std_logic_vector is
     signal index_reg : integer range 0 to 999 := 0;
     signal index_binary : std_logic_vector(11 downto 0) := (others => '0');
     signal list_counter : integer range 0 to 6;
+    signal send_space : boolean := false;
     
     -- constants of symbols in ASCII binary code
     constant lowerp : std_logic_vector (7 downto 0) := "01110000";
@@ -120,7 +124,10 @@ function byte_to_hex(value : std_logic_vector) return std_logic_vector is
     constant foo : unsigned (7 downto 0) := x"39";
     
 begin
+
+
 --------------------------- TOP LEVEL FSM
+
     top_fsm : process (clk, reset)
     begin
     
@@ -144,7 +151,7 @@ begin
                     numWords_bcd <= (others => "0"); -- add reset
                     peakSent <= '0';
                     indexSent <= '0';
-                    hex_counter <= 0;
+                    index_counter <= 0;
                 
                     if rxNow = '1' then
                         -- if 'a' or 'A' input
@@ -181,6 +188,7 @@ begin
     
     end process; --end top-level fsm
     
+
     -------------------- ANNN sub-FSM process
     annn_process : process (clk)
     begin
@@ -246,6 +254,7 @@ begin
                   else
                     next_annn_state <= INIT; -- go back to reset state
                   end if;
+
                 when START_DP =>
                 
                   numWords_bcd <= reg1 & reg2 & reg3; -- concatenate 
@@ -291,6 +300,7 @@ begin
     end process;
     
 ---------------------- PL FSM
+
     pl_process : process (clk, reset)
     begin
     next_pl_state <= pl_state;
@@ -312,13 +322,13 @@ begin
             ((rxData = lowerl) or (rxData = upperl)) then -- command is LIST
                 next_pl_state <= LIST;
             end if;
+            
         
         when PEAK =>
             
             if peakSent = '0' and indexSent = '0' and spaceSent = '0' then
             --send peak value from dataResults
-                txData <= to_hex(dataResults(4)(7 downto 4)); -- send first nibble as ascii
-                txData <= to_hex(dataResults(4)(3 downto 0)); -- send last nibble as ascii
+                txData <= dataResults(4); -- ???
                 peakSent <= '1';
             
             elsif peakSent = '1' and indexSent = '0' and spaceSent = '0' then
@@ -330,39 +340,10 @@ begin
             --send maxIndex
                 -- convert maxIndex into array of std_logic_vector
                 
-                if hex_counter = 0 then
-                    
-                    bcd_sum(0) <= to_integer(signed(maxIndex(0))) * 100;
-                    bcd_sum(1) <= to_integer(signed(maxIndex(1))) * 10;
-                    bcd_sum(2) <= to_integer(signed(maxIndex(2)));
-                    index_reg <= bcd_sum(0) + bcd_sum(1) + bcd_sum(2); -- store converted BCD as integer in index_reg
-                    index_binary <= std_logic_vector(to_unsigned(index_reg, index_binary'length));
-                    
-                    if index_binary(0 to 3) = "0000" then
-                        hex_counter <= 1;
-                        if index_binary(4 to 7) = "0000" then
-                            hex_counter <= 2;
-                            
-                            txData <= to_hex(index_binary(8 to 11));
-                        
-                        else
-                            txData <= to_hex(index_binary(4 to 7));
-                        end if;
-                 
-                    else
-                        txData <= to_hex(index_binary(0 to 3));
-                        hex_counter <= 1;
-                        
-                    end if;
-                    
-                 txNow <= '1';
-                    
-                elsif hex_counter = 1 then
-                    txData <= to_hex(index_binary(4 to 7));
-                    hex_counter <= 2;
-                elsif hex_counter = 2 then
-                    txData <= to_hex(index_binary(8 to 11));
-                    next_pl_state <= INIT;
+                if index_counter < 4 then
+                    txData <= maxIndex(0);
+                    txNow <= '1';
+                    index_counter <= index_counter + 1;
                 
                end if;
                 
@@ -372,11 +353,14 @@ begin
             end if;
             
         when LIST =>
-            if list_counter < 7 then
+            if list_counter < 7 and send_space = false then
+                
                 --send dataResults(list_counter)
-                txData <= to_hex(dataResults(list_counter)(7 downto 4)); -- send first nibble as ascii
-                txData <= to_hex(dataResults(list_counter)(3 downto 0)); -- send last nibble as ascii
-                list_counter <= list_counter + 1;            
+               
+                
+            
+                list_counter <= list_counter + 1;
+            
             else
             
                next_pl_state <= pl_state;
@@ -390,7 +374,9 @@ begin
     end if;
     
     pl_state <= next_pl_state;
+
     end process;
+
 ---------------------- DATA ECHOING FSM [runs concurrently
     data_echoing : process (clk, reset)
     begin
@@ -422,4 +408,6 @@ begin
     end process;
                 
             
+
+
 end Behavioral;
