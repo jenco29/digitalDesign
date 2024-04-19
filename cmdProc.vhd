@@ -66,13 +66,24 @@ function to_hex(value : std_logic_vector) return std_logic_vector is
     begin
     if value >= "0000" and value <= "1001" then
         result := "0011" & value;
+    elsif value = "1010" then -- 10
+        result := "01000001";
+    elsif value = "1011" then -- 11
+        result := "01000010";
+    elsif value = "1100" then -- 12
+        result := "01000011";
+    elsif value = "1101" then -- 13
+        result := "01000100";
+    elsif value = "1010" then -- 14
+        result := "01000101";
+    elsif value = "1011" then -- 15
+        result := "01000110";
     else
-        result := "0100" & value;
+        result := "00000000";
+    
     end if;
     return result;
  end function;
- 
- 
 
 -----------defining different state types for top-level FSM
 
@@ -92,15 +103,15 @@ function to_hex(value : std_logic_vector) return std_logic_vector is
     signal next_annn_state : ANNN_state_type := INIT;
     
     -- counters and register declarations
-    signal counterN, hex_counter : integer range 0 to 3 := 0; -- to validate ANNN input
+    signal counterN, index_counter : integer range 0 to 3 := 0; -- to validate ANNN input
     signal reg1, reg2, reg3, rxSignal : BCD_ARRAY_TYPE(3 downto 0) := (others => "0000"); -- N registers, and rxSignal to convert binary to BCD
     signal peakSent, indexSent, spaceSent : bit := '0';
     type INT_ARRAY is array (integer range<>) of integer;
     signal bcd_sum : INT_ARRAY(2 downto 0);
     signal index_reg : integer range 0 to 999 := 0;
     signal index_binary : std_logic_vector(11 downto 0) := (others => '0');
-    signal list_binary : std_logic_vector(7 downto 0) := (others => '0'); --new signal
     signal list_counter : integer range 0 to 6;
+    signal send_space : boolean := false;
     
     -- constants of symbols in ASCII binary code
     constant lowerp : std_logic_vector (7 downto 0) := "01110000";
@@ -140,7 +151,7 @@ begin
                     numWords_bcd <= (others => "0"); -- add reset
                     peakSent <= '0';
                     indexSent <= '0';
-                    hex_counter <= 0;
+                    index_counter <= 0;
                 
                     if rxNow = '1' then
                         -- if 'a' or 'A' input
@@ -317,7 +328,7 @@ begin
             if peakSent = '0' and indexSent = '0' and spaceSent = '0' then
             --send peak value from dataResults
                 txData <= dataResults(4); -- ???
-                peakSent <= '1'; -- needs to be in  hex format, pass through to hex function
+                peakSent <= '1';
             
             elsif peakSent = '1' and indexSent = '0' and spaceSent = '0' then
             --send space
@@ -328,38 +339,41 @@ begin
             --send maxIndex
                 -- convert maxIndex into array of std_logic_vector
                 
-                if hex_counter = 0 then
+                if index_counter = 0 then
                     
-                    bcd_sum(0) <= to_integer(signed(maxIndex(0))) * 100;
+                    bcd_sum(0) <= to_integer(signed(maxIndex(0)));
                     bcd_sum(1) <= to_integer(signed(maxIndex(1))) * 10;
-                    bcd_sum(2) <= to_integer(signed(maxIndex(2)));
+                    bcd_sum(2) <= to_integer(signed(maxIndex(2))) * 100;
                     index_reg <= bcd_sum(0) + bcd_sum(1) + bcd_sum(2); -- store converted BCD as integer in index_reg
                     index_binary <= std_logic_vector(to_unsigned(index_reg, index_binary'length));
                     
                     if index_binary(0 to 3) = "0000" then
-                        hex_counter <= 1;
+                        index_counter <= 1;
                         if index_binary(4 to 7) = "0000" then
-                            hex_counter <= 2;
+                            index_counter <= 2;
                             
                             txData <= to_hex(index_binary(8 to 11));
+                            txNow <= '1';
                         
                         else
                             txData <= to_hex(index_binary(4 to 7));
+                            txNow <= '1';
                         end if;
                  
                     else
                         txData <= to_hex(index_binary(0 to 3));
-                        hex_counter <= 1; 
+                        txNow <= '1';
+                        index_counter <= 1;
                         
                     end if;
-                    
-                 txNow <= '1';
-                    
-                elsif hex_counter = 1 then
+                                        
+                elsif index_counter = 1 then
                     txData <= to_hex(index_binary(4 to 7));
-                    hex_counter <= 2;
-                elsif hex_counter = 2 then
+                    txNow <= '1';
+                    index_counter <= 2;
+                elsif index_counter = 2 then
                     txData <= to_hex(index_binary(8 to 11));
+                    txNow <= '1';
                     next_pl_state <= INIT;
                 
                end if;
@@ -370,14 +384,13 @@ begin
             end if;
             
         when LIST =>
-            if list_counter < 7 then
---convert to signed
-               
+            if list_counter < 7 and send_space = false then
+                
                 --send dataResults(list_counter)
-                for list_counter in 0 to 7 loop
-	               txData <= to_hex(dataResults((8*list_counter) to (8*list_counter+4)); --sending the first four bits of the current byte as hex	                                        
-	               txData <= to_hex(dataResults(((8*list_counter)-4) to (8*list_counter-1)); --sending the last 4 bits            
-	            end loop;
+               
+                
+            
+                list_counter <= list_counter + 1;
             
             else
             
