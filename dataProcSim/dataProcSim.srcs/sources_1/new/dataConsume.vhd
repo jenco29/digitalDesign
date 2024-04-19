@@ -22,13 +22,13 @@ entity dataConsume is
 end dataConsume;
 
 architecture asm of dataConsume is
-type state_type is (wait_start, set_num, check_index, prep_data, req_data, new_data, read_data, compare, new_max, end_data, set_results, send_results);
+type state_type is (wait_start, set_num, check_index, prep_data, req_data, new_data, read_data, compare, new_max, end_data, set_results, set_digits, set_max, send_results);
 signal curState, nextState: state_type;
 
 -- index: position of data point currently being compared
 -- max_index: position of largest currently known data point
 -- num_words_reg: stores desired number of words from input
-signal index, index_reg, max_index, max_index_conv, num_words_reg: integer range 0 to SEQ_LENGTH -1;
+signal index, index_reg, max_index, num_words_reg: integer range 0 to SEQ_LENGTH -1;
 -- data_reg: register to synchronously store current data point
 signal data_reg: std_logic_vector(7 downto 0);
 -- ctrl_out_reg: stores current value of output to data generator, used for toggling
@@ -41,8 +41,8 @@ signal max_ind_reg : BCD_ARRAY_TYPE(0 to 2);
 signal clk_rise_toggle : std_logic;
 type INT_ARRAY is array (integer range<>) of integer;
 -- data_store: register that stores full sequence of data points from data generator
-signal data_store : INT_ARRAY(0 to SEQ_LENGTH -1);
-signal bcd_sum: INT_ARRAY(2 downto 0);
+signal data_store : CHAR_ARRAY_TYPE(0 to SEQ_LENGTH -1);
+signal bcd_sum, digits, mod_list: INT_ARRAY(2 downto 0);
 
 begin
 
@@ -51,21 +51,6 @@ begin
     if rising_edge(clk) then
         clk_rise_toggle <= not clk_rise_toggle;
     end if;
-end process;
-
-
-int_to_bcd : process(clk)
-variable bcd : BCD_ARRAY_TYPE(2 downto 0);
-variable bits : INT_ARRAY(2 downto 0);
-variable i : integer range 0 to 2;
-begin
-    max_index_conv <= max_index;
-    for i in 2 to 0 loop
-       bits(i) := max_index_conv mod 10;
-       bcd(i) := std_logic_vector(to_signed(bits(i), BCD_WORD_LENGTH-1));
-       max_index_conv <= (max_index_conv - bits(i))/10; 
-    end loop;
-    max_ind_reg <= bcd;
 end process;
 
 --storing data value inputted on the clock edge
@@ -92,15 +77,19 @@ state_logic : process(curState, clk)
 begin
     case curState is
         when wait_start =>
-            for i in 0 to SEQ_LENGTH -1 loop
-                data_store(i) <= 0;
+            for i in 0 to 2 loop
+                digits(i) <= 0;
+                mod_list(i) <= 0;
             end loop;
             num_words_reg <= 0;
             index <= 0;
-            ctrl_out_reg <= '0'; 
             ctrlOut <= '0';
+            ctrl_out_reg <= '0'; 
+            max_index <= 0;
         
         when set_num =>
+            data_store(0) <= data_reg;
+            byte <= data_reg;
             bcd_sum(0) <= to_integer(signed(numwords_bcd(0)));
             bcd_sum(1) <= to_integer(signed(numwords_bcd(1))) * 10;
             bcd_sum(2) <= to_integer(signed(numwords_bcd(2))) * 100;
@@ -115,7 +104,7 @@ begin
             index <= index_reg;
         
         when read_data => 
-            data_store(index) <= to_integer(signed(data_reg));
+            data_store(index) <= data_reg;
             dataReady <= '1';
             byte <= data_reg;
         
@@ -129,14 +118,28 @@ begin
             read_done <= '1';
             
         when set_results =>
-            data_results_reg(0) <= std_logic_vector(to_signed(data_store(max_index -3), 11));
-            data_results_reg(1) <= std_logic_vector(to_signed(data_store(max_index -2), 11));
-            data_results_reg(2) <= std_logic_vector(to_signed(data_store(max_index -1), 11));
-            data_results_reg(3) <= std_logic_vector(to_signed(data_store(max_index), 11));
-            data_results_reg(4) <= std_logic_vector(to_signed(data_store(max_index +1), 11));
-            data_results_reg(5) <= std_logic_vector(to_signed(data_store(max_index +2), 11));
-            data_results_reg(6) <= std_logic_vector(to_signed(data_store(max_index +3), 11));
+            data_results_reg(0) <= data_store(max_index -3);
+            data_results_reg(1) <= data_store(max_index -2);
+            data_results_reg(2) <= data_store(max_index -1);
+            data_results_reg(3) <= data_store(max_index );
+            data_results_reg(4) <= data_store(max_index +1);
+            data_results_reg(5) <= data_store(max_index +2);
+            data_results_reg(6) <= data_store(max_index +3);
             seqDone <= '1';
+            
+            mod_list(2) <= max_index;
+            mod_list(1) <= (mod_list(2) - mod_list(2) mod 10)/10;
+            mod_list(0) <= (mod_list(1) - mod_list(1) mod 10)/10;
+            
+        when set_digits =>
+            digits(2) <= mod_list(2) mod 10;
+            digits(1) <= mod_list(1) mod 10;
+            digits(0) <= mod_list(0) mod 10;
+        
+        when set_max =>
+            max_ind_reg(2) <= std_logic_vector(to_unsigned(digits(2), BCD_WORD_LENGTH));
+            max_ind_reg(1) <= std_logic_vector(to_unsigned(digits(1), BCD_WORD_LENGTH));
+            max_ind_reg(0) <= std_logic_vector(to_unsigned(digits(0), BCD_WORD_LENGTH));
             
         when send_results =>
             dataResults <= data_results_reg;
@@ -185,7 +188,7 @@ begin
             nextState <= compare;
                 
         when compare =>
-            if data_store(index) > data_store(max_index) then
+            if signed(data_store(index)) > signed(data_store(max_index)) then
                 nextState <= new_max;
             else
                 nextState <= prep_data;
@@ -198,6 +201,12 @@ begin
             nextState <= set_results;
 
         when set_results =>
+            nextState <= set_digits;
+            
+        when set_digits =>
+            nextState <= set_max;
+            
+        when set_max =>
             nextState <= send_results;
             
         when send_results =>
