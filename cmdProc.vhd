@@ -71,6 +71,8 @@ function to_hex(value : std_logic_vector) return std_logic_vector is
     end if;
     return result;
  end function;
+ 
+ 
 
 -----------defining different state types for top-level FSM
 
@@ -97,6 +99,7 @@ function to_hex(value : std_logic_vector) return std_logic_vector is
     signal bcd_sum : INT_ARRAY(2 downto 0);
     signal index_reg : integer range 0 to 999 := 0;
     signal index_binary : std_logic_vector(11 downto 0) := (others => '0');
+    signal list_binary : std_logic_vector(7 downto 0) := (others => '0'); --new signal
     signal list_counter : integer range 0 to 6;
     
     -- constants of symbols in ASCII binary code
@@ -314,7 +317,7 @@ begin
             if peakSent = '0' and indexSent = '0' and spaceSent = '0' then
             --send peak value from dataResults
                 txData <= dataResults(4); -- ???
-                peakSent <= '1';
+                peakSent <= '1'; -- needs to be in  hex format, pass through to hex function
             
             elsif peakSent = '1' and indexSent = '0' and spaceSent = '0' then
             --send space
@@ -346,16 +349,16 @@ begin
                  
                     else
                         txData <= to_hex(index_binary(0 to 3));
-                        hex_counter <= 1;
+                        hex_counter <= 1; 
                         
                     end if;
                     
                  txNow <= '1';
                     
-                elif hex_counter = 1 then
+                elsif hex_counter = 1 then
                     txData <= to_hex(index_binary(4 to 7));
                     hex_counter <= 2;
-                elif hex_counter = 2 then
+                elsif hex_counter = 2 then
                     txData <= to_hex(index_binary(8 to 11));
                     next_pl_state <= INIT;
                 
@@ -368,10 +371,13 @@ begin
             
         when LIST =>
             if list_counter < 7 then
-                
+--convert to signed
+               
                 --send dataResults(list_counter)
-            
-                list_counter <= list_counter + 1;
+                for list_counter in 0 to 7 loop
+	               txData <= to_hex(dataResults((8*list_counter) to (8*list_counter+4)); --sending the first four bits of the current byte as hex	                                        
+	               txData <= to_hex(dataResults(((8*list_counter)-4) to (8*list_counter-1)); --sending the last 4 bits            
+	            end loop;
             
             else
             
