@@ -61,7 +61,7 @@ begin
     return bcd;
 end function;
 
-function to_hex(value : std_logic_vector) return std_logic_vector is
+function to_ascii(value : std_logic_vector) return std_logic_vector is
     variable result : std_logic_vector(7 downto 0);
     begin
     if value >= "0000" and value <= "1001" then
@@ -190,7 +190,7 @@ begin
     
 
     -------------------- ANNN sub-FSM process
-    annn_process : process (clk)
+    annn_process : process (clk, reset)
     begin
     next_annn_state <= annn_state;
     
@@ -251,6 +251,17 @@ begin
         
         annn_state <= next_annn_state;
     end process;
+    
+    -------------------------------Counter N process
+    countern_process : process(clk, top_state)
+    begin
+        if rising_edge(clk) and top_state = INIT then
+            counter_n <= 0;
+        elsif rising_edge(clk) and top_state = ANNN and annn_state = CHECK_NNN then
+        
+        end if;
+   end process;
+            
     
     ------------------------------- REG process to update registers
     
@@ -314,7 +325,7 @@ begin
             elsif peakSent = '1' and indexSent = '0' and spaceSent = '1' then
             --send maxIndex
                 if index_counter < 4 then
-                    txData <= "0011" & maxIndex(index_counter);
+                    txData <= to_ascii(maxIndex(index_counter));
                     txNow <= '1';
                     index_counter <= index_counter + 1;
                 else
@@ -331,9 +342,9 @@ begin
             if list_counter < 14 and send_space = false then
                 
                 --send dataResults(list_counter)
-                txData <= list_value(list_counter*4 to list_counter*4 + 3);
+                txData <= to_ascii(list_value(list_counter*4 to list_counter*4 + 3));
                 txNow <= '1';
-                if list_counter mod 2 = 1 then
+                if list_counter mod 2 = 1 then -- if odd
                 send_space <= true;
                 
                 end if;
