@@ -110,8 +110,9 @@ function to_hex(value : std_logic_vector) return std_logic_vector is
     signal bcd_sum : INT_ARRAY(2 downto 0);
     signal index_reg : integer range 0 to 999 := 0;
     signal index_binary : std_logic_vector(11 downto 0) := (others => '0');
-    signal list_counter : integer range 0 to 6;
+    signal list_counter : integer range 0 to 14 := 0;
     signal send_space : boolean := false;
+    signal list_value : std_logic_vector(55 downto 0);
     
     -- constants of symbols in ASCII binary code
     constant lowerp : std_logic_vector (7 downto 0) := "01110000";
@@ -320,6 +321,7 @@ begin
             
              elsif (ovErr = '0') and (framErr = '0') and (rxNow = '1') and 
             ((rxData = lowerl) or (rxData = upperl)) then -- command is LIST
+                list_value <= dataResults(0) & dataResults(1) & dataResults(2) & dataResults(3) & dataResults(4) & dataResults(5) & dataResults(6) & dataResults(7);
                 next_pl_state <= LIST;
             end if;
             
@@ -338,12 +340,12 @@ begin
             
             elsif peakSent = '1' and indexSent = '0' and spaceSent = '1' then
             --send maxIndex
-                -- convert maxIndex into array of std_logic_vector
-                
                 if index_counter < 4 then
                     txData <= maxIndex(0);
                     txNow <= '1';
                     index_counter <= index_counter + 1;
+                else
+                    next_pl_state <= INIT;
                 
                end if;
                 
@@ -353,13 +355,25 @@ begin
             end if;
             
         when LIST =>
-            if list_counter < 7 and send_space = false then
+            if list_counter < 14 and send_space = false then
                 
                 --send dataResults(list_counter)
-               
+                txData <= list_value(list_counter*4 to list_counter*4 + 3);
+                txNow <= '1';
+                if list_counter mod 2 = 1 then
+                send_space <= true;
                 
-            
+                end if;
+                
                 list_counter <= list_counter + 1;
+            
+            elsif send_space = true then
+                
+                txData <= space;
+                txNow <= '1';
+            
+                send_space <= false;
+            
             
             else
             
