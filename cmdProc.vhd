@@ -104,7 +104,7 @@ function to_hex(value : std_logic_vector) return std_logic_vector is
     
     -- counters and register declarations
     signal counterN, index_counter : integer range 0 to 3 := 0; -- to validate ANNN input
-    signal reg1, reg2, reg3, rxSignal : BCD_ARRAY_TYPE(3 downto 0) := (others => "0000"); -- N registers, and rxSignal to convert binary to BCD
+    signal reg1, reg2, reg3, rxSignal : BCD_ARRAY_TYPE(0 downto 0) := (others => "0000"); -- N registers, and rxSignal to convert binary to BCD
     signal peakSent, indexSent, spaceSent : bit := '0';
     type INT_ARRAY is array (integer range<>) of integer;
     signal bcd_sum : INT_ARRAY(2 downto 0);
@@ -122,7 +122,6 @@ function to_hex(value : std_logic_vector) return std_logic_vector is
     constant lowera : std_logic_vector (7 downto 0) := "01100001";
     constant uppera : std_logic_vector (7 downto 0) := "01000001";
     constant space : std_logic_vector (7 downto 0) := "00100000";
-    constant foo : unsigned (7 downto 0) := x"39";
     
 begin
 
@@ -140,16 +139,16 @@ begin
             case top_state is
                 when INIT =>
                     -- init all counters and registers again as 0
-                    reg1 <= (others => "0000");
-                    reg2 <= (others => "0000");
-                    reg3 <= (others => "0000");
+                    reg1(0) <= "0000";
+                    reg2(0) <= "0000";
+                    reg3(0) <= "0000";
                     counterN <= 0;
                     txNow <= '0';
                     start <= '0';
                     rxDone <= '0';
                     txdata <= (others => '0');
-                    rxSignal <= (others => "0000");
-                    numWords_bcd <= (others => "0"); -- add reset
+                    rxSignal(0) <= "0000";
+                    numWords_bcd <= ("0000","0000","0000"); -- add reset
                     peakSent <= '0';
                     indexSent <= '0';
                     index_counter <= 0;
@@ -208,49 +207,10 @@ begin
                 
                   rxDone <= '1'; -- for one cycle
                   -- if rxData is integer 0-9
-                  if rxData(3 downto 0) >="0000" and rxData(3 downto 0) >= "1001" then
+                  if rxData(7 downto 4) = "0011" and rxData(3 downto 0) >="0000" and rxData(3 downto 0) >= "1001" then
                    counterN <= counterN + 1;
                    
-                   case rxData(3 downto 0) is
-                   when "0000" =>
-                   
-                    rxSignal <= (others=>"0000");
-                    
-                   when "0001" =>
-                   
-                    rxSignal <= to_bcd(1);
-                    
-                   when "0010" =>
-                    rxSignal <= to_bcd(2);
-                    
-                   when "0011" =>
-                   
-                    rxSignal <= to_bcd(3);
-                    
-                   when "0100" =>
-                    rxSignal <= to_bcd(4);
-                    
-                   when "0101" =>
-                   
-                    rxSignal <= to_bcd(5);
-                    
-                   when "0110" =>
-                    rxSignal <= to_bcd(6);
-                   
-                   when "0111" =>
-                   
-                    rxSignal <= to_bcd(7);
-                    
-                   when "1000" =>
-                    rxSignal <= to_bcd(8);
-                   
-                   when "1001" =>
-                    rxSignal <= to_bcd(9);
-                    
-                   when others =>
-                    rxSignal <= to_bcd(0); -- edge case
-                   
-                   end case;
+                   rxSignal(0) <= rxData(3 downto 0);
                    
                   else
                     next_annn_state <= INIT; -- go back to reset state
@@ -321,7 +281,7 @@ begin
             
              elsif (ovErr = '0') and (framErr = '0') and (rxNow = '1') and 
             ((rxData = lowerl) or (rxData = upperl)) then -- command is LIST
-                list_value <= dataResults(0) & dataResults(1) & dataResults(2) & dataResults(3) & dataResults(4) & dataResults(5) & dataResults(6) & dataResults(7);
+                list_value <= dataResults(0) & dataResults(1) & dataResults(2) & dataResults(3) & dataResults(4) & dataResults(5) & dataResults(6);
                 next_pl_state <= LIST;
             end if;
             
