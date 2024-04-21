@@ -69,7 +69,7 @@ architecture Behavioral of cmdProc is
     constant space : std_logic_vector (7 downto 0) := "00100000";
     constant num_ascii : std_logic_vector (3 downto 0) := "0011";
     constant letter_ascii : std_logic_vector (3 downto 0) := "0100";
-    constant zero : std_logic_vector (3 downto 0) := "00000000";
+    constant zero : std_logic_vector (3 downto 0) := "0000";
 
 
 
@@ -80,9 +80,11 @@ BEGIN
 rxData_In : process(clk)
 --storing data value inputted on the clock edge
 begin
-    if rising_edge(clk) and rxnow='1' then
-        data_reg <= rxdata;
-        rxdone <= '1';
+    if rising_edge(clk) then
+        if rxnow='1' then
+            data_reg <= rxdata;
+            rxdone <= '1';
+        end if;
     end if;
 end process;  
 
@@ -91,17 +93,16 @@ end process;
 nibble_to_asc : process(clk)
 --storing data value inputted on the clock edge
 begin
-    if int2 = 0 then
-        ascii_prefix2 <= "0010";
-    end if;
-        
+    
     if int1 > 9 then
         ascii_prefix1 <= letter_ascii;
     else 
         ascii_prefix1 <= num_ascii;
     end if;
     
-    if int2 < 10 and int2 > 0 then
+    if int2 = 0 then
+        ascii_prefix2 <= "0010";  
+    elsif int2 < 10 and int2 > 0 then
         ascii_prefix2 <= num_ascii;
     else 
         ascii_prefix2 <= letter_ascii;
@@ -133,14 +134,14 @@ end process;
             topNextState <= INIT;
         END IF;
              
-              WHEN AN =>
+      WHEN AN =>
         IF (data_reg(7 downto 4) = num_ascii) and ((TO_INTEGER(UNSIGNED(data_reg))) > 47) and ((TO_INTEGER(UNSIGNED(data_reg))) < 58) THEN 
             topNextState <= ANN;
         ELSE
             topNextState <= INIT;
         END IF;
                
-              WHEN ANN =>
+      WHEN ANN =>
         IF (data_reg(7 downto 4) = num_ascii) and ((TO_INTEGER(UNSIGNED(data_reg))) > 47) and ((TO_INTEGER(UNSIGNED(data_reg))) < 58) THEN 
             topNextState <= ANNN;
         ELSE
@@ -150,6 +151,8 @@ end process;
         WHEN ANNN =>
                 IF ANNN_byteCount > NNN THEN
                    topNextState <= ANNN_BYTE;
+                ELSE 
+                    topNextState <= ANNN;
                  END IF;     
                          
          WHEN ANNN_BYTE =>
@@ -162,13 +165,17 @@ end process;
         WHEN P =>
             IF p_printed = true THEN 
                 topNextState <= INIT;
+            ELSE
+                topNextState <= P;
              END IF;
                       
         
         WHEN LIST =>
-        IF listCount = 7 THEN 
+            IF listCount = 7 THEN 
                 topNextState <= INIT;
-             END IF;
+            ELSE
+                topNextState <= LIST;  
+            END IF;
            
     END CASE;
   END PROCESS; -- combi_nextState
@@ -177,31 +184,23 @@ end process;
   --processes on fsm states
 state_logic : process(topCurState, clk)
 begin
-    
+    start <= '0';
+    startList <= false;
+    p_printed <= false;
     case topCurState is
-        
-        when INIT =>
-            start <= '0';
-            startList <= false;
-            p_printed <= false;
-
 
         when A => 
-          start <= '0'; 
           ANNN_reg(0) <= data_reg(3 downto 0);
           
         when AN => 
-          start <= '0';
           ANNN_reg(1) <= data_reg(3 downto 0);
                         
           
-        when ANN => 
-          start <= '0';    
+        when ANN =>  
           ANNN_reg(2) <= data_reg(3 downto 0);
     
                   
         when ANNN => 
-          start <= '0'; 
           NNN <= ( (TO_INTEGER(UNSIGNED(ANNN_reg(0)))) + (TO_INTEGER(UNSIGNED(ANNN_reg(1)))*10) + (TO_INTEGER(UNSIGNED(ANNN_reg(2)))*100));
           numwords_bcd(0) <= ANNN_reg(0);
           numwords_bcd(1) <= ANNN_reg(1);
@@ -210,26 +209,24 @@ begin
         when ANNN_BYTE => --start proc
           start <= '1'; 
           if dataReady='1' then
-          nibble1 <= byte(3 downto 0); 
-          nibble2 <= byte(7 downto 4); 
-          
-          int1 <= TO_INTEGER (UNSIGNED(nibble1));
-          int2 <= TO_INTEGER (UNSIGNED(nibble1));
-
-          to_be_sent(7 downto 4) <= ascii_prefix1; 
-          to_be_sent(3 downto 0) <= nibble1;
-          enSend <= true;
-          
-          to_be_sent(7 downto 4) <= ascii_prefix2; 
-          to_be_sent(3 downto 0) <= nibble2; 
-          enSend <= true;
-          ANNN_byteCount <= ANNN_byteCount + 1;
+              nibble1 <= byte(3 downto 0); 
+              nibble2 <= byte(7 downto 4); 
+              
+              int1 <= TO_INTEGER (UNSIGNED(nibble1));
+              int2 <= TO_INTEGER (UNSIGNED(nibble1));
+    
+              to_be_sent(7 downto 4) <= ascii_prefix1; 
+              to_be_sent(3 downto 0) <= nibble1;
+              enSend <= true;
+              
+              to_be_sent(7 downto 4) <= ascii_prefix2; 
+              to_be_sent(3 downto 0) <= nibble2; 
+              enSend <= true;
+              ANNN_byteCount <= ANNN_byteCount + 1;
           end if;    
 
 
         when P =>
-
-            p_printed <= false;
 
            peakStore <= dataResults(3); 
           int1 <= TO_INTEGER (UNSIGNED(peakStore(3 downto 0)));
@@ -287,7 +284,7 @@ begin
             txNow <= '1';
             txData <= to_be_sent;
             enSend <=false;
-         
+            
         end if;
         
      txNow <= '0';
