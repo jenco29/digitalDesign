@@ -419,7 +419,7 @@ end process;
 
 txData_Out : process(clk)
 begin
-    rxdone <= '0';
+    rxdone <= '1';
     if rising_edge(clk) then
         if (topCurState = INIT)  then --ADD AND RXNOW='1' BACK IN PLSSSSSSSSSSSSSSSS
             txNow <= '1';
