@@ -36,7 +36,7 @@ end cmdProc;
 architecture Behavioral of cmdProc is
 
 -- State declaration for main FSM
-  TYPE state_type IS (INIT, A, AN, ANN, ANNN, ANNN_BYTE_IN, ANNN_BYTE_OUT1, ANNN_BYTE_OUT2 ,P, LIST);  -- List your states here 	
+  TYPE state_type IS (INIT, A, AN, ANN, ANNN, ANNN_BYTE ,P, LIST);  -- List your states here 	
   SIGNAL topCurState, topNextState: state_type;
     
    signal nibbleIndex : integer;
@@ -147,11 +147,17 @@ end process;
             topNextState <= INIT;
         END IF;
                
-              WHEN ANNN =>
+        WHEN ANNN =>
+                IF ANNN_byteCount > NNN THEN
+                   topNextState <= ANNN_BYTE;
+                 END IF;     
+                         
+         WHEN ANNN_BYTE =>
                     IF ANNN_byteCount > NNN THEN
                         topNextState <= INIT;
-                    END IF;          
-        
+                    ELSE
+                        topNextState <= ANNN;
+                    END IF; 
              
         WHEN P =>
             IF p_printed = true THEN 
@@ -194,13 +200,16 @@ begin
           ANNN_reg(2) <= data_reg(3 downto 0);
     
                   
-        when ANNN => --start proc
+        when ANNN => 
+          start <= '0'; 
           NNN <= ( (TO_INTEGER(UNSIGNED(ANNN_reg(0)))) + (TO_INTEGER(UNSIGNED(ANNN_reg(1)))*10) + (TO_INTEGER(UNSIGNED(ANNN_reg(2)))*100));
-          start <= '1'; 
           numwords_bcd(0) <= ANNN_reg(0);
           numwords_bcd(1) <= ANNN_reg(1);
           numwords_bcd(2) <= ANNN_reg(2);
-              
+         
+        when ANNN_BYTE => --start proc
+          start <= '1'; 
+          if dataReady='1' then
           nibble1 <= byte(3 downto 0); 
           nibble2 <= byte(7 downto 4); 
           
@@ -215,12 +224,12 @@ begin
           to_be_sent(3 downto 0) <= nibble2; 
           enSend <= true;
           ANNN_byteCount <= ANNN_byteCount + 1;
+          end if;    
 
 
         when P =>
 
             p_printed <= false;
-        IF dataReady='1' then
 
            peakStore <= dataResults(3); 
           int1 <= TO_INTEGER (UNSIGNED(peakStore(3 downto 0)));
@@ -244,10 +253,8 @@ begin
            to_be_sent <= num_ascii & maxIndex(2);
            enSend <= true;
            p_printed <= true;
-           end if;
    
         when LIST =>
-            IF dataReady='1' then
                       listStore <= dataResults(listCount); 
                 int1 <= TO_INTEGER (UNSIGNED(listStore(3 downto 0)));
                 int2 <= TO_INTEGER (UNSIGNED(listStore(7 downto 4)));
@@ -262,7 +269,6 @@ begin
                         nibbleIndex <= 0;
                         listCount <= listCount + 1;                       
                 end if;
-            end if;
                                        
         when others =>
             -- do nothing
