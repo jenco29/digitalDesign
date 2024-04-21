@@ -36,36 +36,22 @@ end cmdProc;
 architecture Behavioral of cmdProc is
 
 -- State declaration for main FSM
-  TYPE state_type IS (INIT, A, AN, ANN, ANNN, ANNN_BYTE_IN, ANNN_BYTE_OUT1, ANNN_BYTE_OUT2 ,P, P_BYTE1, P_BYTE2, P_SPACE, P_INDEX1,P_INDEX2,P_INDEX3, LIST_INIT, LIST_PRINT);  -- List your states here 	
+  TYPE state_type IS (INIT, A, AN, ANN, ANNN, ANNN_BYTE_IN, ANNN_BYTE_OUT1, ANNN_BYTE_OUT2 ,P, P_BYTE1, P_BYTE2, P_SPACE, P_INDEX1,P_INDEX2,P_INDEX3, LIST);  -- List your states here 	
   SIGNAL topCurState, topNextState: state_type;
-  
-  -- State declaration FOR LIST FSM
-  TYPE list_state_type IS (L, L1, L2, L3, L4, L5, L6, L7);  -- List your states here 	
-  SIGNAL listCurState, listNextState: list_state_type;
-  
+    
    signal nibbleIndex : integer;
   
     signal data_reg: std_logic_vector(7 downto 0);   -- data_reg: register to synchronously store byte from rx
 
-    --signal hex_data_reg_nibble1: std_logic_vector(7 downto 0); --store byte from rx as hex value
-    --signal hex_data_reg_nibble2: std_logic_vector(7 downto 0); --store byte from rx as hex value
     signal to_be_sent: std_logic_vector(7 downto 0); --to store the next byte to be sent to tx in hex
     signal ANNN_reg : BCD_ARRAY_TYPE(3 downto 0) := (others => "0000"); -- N registers, and rxSignal to convert binary to BCD
-    --signal reg1, reg2, reg3, rxSignal : BCD_ARRAY_TYPE(3 downto 0) := (others => "0000"); -- N registers, and rxSignal to convert binary to BCD
 
-    --signal reg1, reg2, reg3 : std_logic; -- N registers, and rxSignal to convert binary to BCD
 
     signal peakSent, indexSent, spaceSent : bit := '0';
-    type INT_ARRAY is array (integer range<>) of integer;
-    signal bcd_sum, digits, mod_list: INT_ARRAY(2 downto 0);
-    signal data_results_reg : CHAR_ARRAY_TYPE(0 to RESULT_BYTE_NUM-1);
-    signal temp : integer := 0;
-    signal index, numwords_int, num_words_reg: integer range 0 to SEQ_LENGTH -1;
     
     signal nibble1, nibble2, ascii_prefix1, ascii_prefix2: std_logic_vector(3 downto 0) := "0000";
     signal int1, int2: natural := 0;
     signal peakStore, listStore: std_logic_vector(7 downto 0) := "00000000";
-    signal List1, List2, List3, List4, List5, List6, List7 : std_logic_vector(7 downto 0) := "00000000";
     
     signal ListCount, ANNN_byteCount,NNN : integer :=0;
 
@@ -100,22 +86,6 @@ begin
     end if;
 end process;  
 
-  -------------convert int to bcd------------------------------
-
-int_to_bcd : process(clk)
-begin
-    if rising_edge(clk) then
-        if topCurState = A then
-            numwords_bcd(0) <= std_logic_vector(to_unsigned(numwords_int mod 10, BCD_WORD_LENGTH));
-            temp <= (numwords_int - numwords_int mod 10) / 10; 
-        elsif topCurState = AN then
-            numwords_bcd(1) <= std_logic_vector(to_unsigned(temp mod 10, BCD_WORD_LENGTH));
-            temp <= (temp - temp mod 10) / 10;
-        elsif topCurState = ANN then
-            numwords_bcd(2) <= std_logic_vector(to_unsigned(temp mod 10, BCD_WORD_LENGTH));
-        end if;
-    end if;
-end process;
 
 ---------------int and nibble to ascii--------------------------
 nibble_to_asc : process(clk)
@@ -150,7 +120,7 @@ end process;
         ELSIF data_reg = lowerp or data_reg = upperp THEN 
           topNextState <= P;
         ELSIF data_reg = lowerl or data_reg = upperl THEN 
-          topNextState <= LIST_INIT;
+          topNextState <= LIST;
         ELSE
           topNextState <= INIT;
         END IF;
@@ -214,16 +184,11 @@ end process;
              END IF;
                       
         
-        WHEN LIST_INIT =>
-        IF dataReady='1' THEN 
-          topNextState <= LIST_PRINT;
-        END IF;
-            
-       WHEN LIST_PRINT =>
-            IF listCount = 7 THEN 
+        WHEN LIST =>
+        IF listCount = 7 THEN 
                 topNextState <= INIT;
              END IF;
-        
+           
     END CASE;
   END PROCESS; -- combi_nextState
   -----------------------------------------------------
@@ -311,16 +276,12 @@ begin
            to_be_sent <= num_ascii & maxIndex(2);
            enSend <= true;
            p_printed <= true;
-
-        when LIST_INIT =>
-            startList <= true;
-            listCount <= 0;
-            
-        when LIST_PRINT =>
-          listIndexSent <= false;
-          listStore <= dataResults(listCount); 
-          int1 <= TO_INTEGER (UNSIGNED(listStore(3 downto 0)));
-          int2 <= TO_INTEGER (UNSIGNED(listStore(7 downto 4)));
+   
+        when LIST =>
+            IF dataReady='1' then
+                      listStore <= dataResults(listCount); 
+                int1 <= TO_INTEGER (UNSIGNED(listStore(3 downto 0)));
+                int2 <= TO_INTEGER (UNSIGNED(listStore(7 downto 4)));
           
                 if nibbleIndex = 0 then
                         to_be_sent <= ascii_prefix1 & listStore(3 downto 0);
@@ -332,6 +293,7 @@ begin
                         nibbleIndex <= 0;
                         listCount <= listCount + 1;                       
                 end if;
+            end if;
                                        
         when others =>
             -- do nothing
