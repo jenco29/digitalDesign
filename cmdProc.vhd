@@ -36,17 +36,17 @@ end cmdProc;
 architecture Behavioral of cmdProc is
 
 -- State declaration for main FSM
-  TYPE state_type IS (INIT, A, AN, ANN, ANNN, ANNN_BYTE_IN, ANNN_BYTE_OUT1, ANNN_BYTE_OUT2, ANNN_DONE ,P, P_BYTE1, P_BYTE2, P_SPACE, P_INDEX1,P_INDEX2,P_INDEX3, LIST_INIT, LIST_PRINT1, LIST_PRINT2);  -- List your states here 	
+  TYPE state_type IS (INIT,INIT_BYTE, A, AN, ANN, ANNN, ANNN_BYTE_IN, ANNN_BYTE_OUT1, ANNN_BYTE_OUT2, ANNN_DONE ,P, P_BYTE1, P_BYTE2, P_SPACE, P_INDEX1,P_INDEX2,P_INDEX3, LIST_INIT, LIST_PRINT1, LIST_PRINT2);  -- List your states here 	
   SIGNAL topCurState, topNextState: state_type;
     
     signal data_reg: std_logic_vector(7 downto 0);   -- data_reg: register to synchronously store byte from rx
 
     signal to_be_sent: std_logic_vector(7 downto 0); --to store the next byte to be sent to tx in hex
-    signal ANNN_reg : BCD_ARRAY_TYPE(3 downto 0) := (others => "0000"); -- N registers
+    signal ANNN_reg : BCD_ARRAY_TYPE(3 downto 0); -- N registers
     
-    signal nibble1, nibble2, ascii_prefix1, ascii_prefix2: std_logic_vector(3 downto 0) := "0000";
-    signal int1, int2: natural := 0;
-    signal peakStore, listStore: std_logic_vector(7 downto 0) := "00000000";
+    signal nibble1, nibble2, ascii_prefix1, ascii_prefix2: std_logic_vector(3 downto 0);
+    signal int1, int2: integer := 0;
+    signal peakStore, listStore: std_logic_vector(7 downto 0);
     
     signal ListCount, ANNN_byteCount,NNN : integer :=0;
 
@@ -106,6 +106,14 @@ end process;
   BEGIN
     CASE topCurState IS
       WHEN INIT =>
+        IF rxNow = '1' THEN 
+                  topNextState <= INIT_BYTE;
+        ELSE
+                  topNextState <= INIT;
+
+        END IF;
+        
+         WHEN INIT_BYTE =>
         IF data_reg = lowera or data_reg = uppera THEN 
           topNextState <= A;
         ELSIF data_reg = lowerp or data_reg = upperp THEN 
@@ -115,6 +123,7 @@ end process;
         ELSE
           topNextState <= INIT;
         END IF;
+
         
         
       WHEN A =>
@@ -258,9 +267,6 @@ end process;
   --processes on fsm states
 state_logic : process(topCurState, clk)
 begin
-enSent <= false;  
-peakStored <= false;
-listStored <= false;
     case topCurState is
         
         when INIT =>
