@@ -35,24 +35,50 @@ end cmdProc;
 
 architecture Behavioral of cmdProc is
 
+function to_ascii(value : std_logic_vector) return std_logic_vector is
+    variable result : std_logic_vector(7 downto 0);
+    begin
+    if value >= "0000" and value <= "1001" then
+        result := "0011" & value;
+    elsif value = "1010" then -- 10
+        result := "01000001";
+    elsif value = "1011" then -- 11
+        result := "01000010";
+    elsif value = "1100" then -- 12
+        result := "01000011";
+    elsif value = "1101" then -- 13
+        result := "01000100";
+    elsif value = "1010" then -- 14
+        result := "01000101";
+    elsif value = "1011" then -- 15
+        result := "01000110";
+    else
+        result := "00000000";
+    
+    end if;
+    return result;
+ end function;
+
 -- State declaration for main FSM
-  TYPE state_type IS (INIT,INIT_BYTE, A, AN, ANN, ANNN, ANNN_BYTE_IN, ANNN_BYTE_OUT1, ANNN_BYTE_OUT2, ANNN_DONE ,P, P_BYTE1, P_BYTE2, P_SPACE, P_INDEX1,P_INDEX2,P_INDEX3, LIST_INIT, LIST_PRINT1, LIST_PRINT2);  -- List your states here 	
+  TYPE state_type IS (INIT, DATA_ECHO, INIT_BYTE, A, AN, ANN, ANNN, ANNN_BYTE_IN, ANNN_BYTE_OUT1, ANNN_BYTE_OUT2, ANNN_DONE ,P, P_BYTE1, P_BYTE2, P_SPACE, P_INDEX1,P_INDEX2,P_INDEX3, LIST_INIT, LIST_PRINT1, LIST_PRINT2);  -- List your states here 	
   SIGNAL topCurState, topNextState: state_type;
     
-    signal data_reg: std_logic_vector(7 downto 0);   -- data_reg: register to synchronously store byte from rx
+    signal data_reg, byte_reg: std_logic_vector(7 downto 0);   -- data_reg: register to synchronously store byte from rx
 
     signal to_be_sent: std_logic_vector(7 downto 0); --to store the next byte to be sent to tx in hex
     signal ANNN_reg : BCD_ARRAY_TYPE(3 downto 0); -- N registers
     
-    signal nibble1, nibble2, ascii_prefix1, ascii_prefix2: std_logic_vector(3 downto 0);
-    signal int1, int2: integer := 0;
+    signal nibble1, nibble2: std_logic_vector(3 downto 0);
     signal peakStore, listStore: std_logic_vector(7 downto 0);
     
     signal ListCount, ANNN_byteCount,NNN : integer :=0;
 
     signal enSend, enSent, peakStored, listStored, NNNStored : boolean := false;
 
-   
+    signal rxnow_reg, txdone_reg, dataReady_reg, seqDone_reg  : std_logic;
+    signal maxIndex_reg : BCD_ARRAY_TYPE(3 downto 0);
+    signal dataResults_reg : CHAR_ARRAY_TYPE(0 to RESULT_BYTE_NUM-1); -- N registers
+
         -- constants of symbols in ASCII binary code
     constant lowerp : std_logic_vector (7 downto 0) := "01110000";
     constant upperp : std_logic_vector (7 downto 0) := "01010000";
@@ -62,51 +88,70 @@ architecture Behavioral of cmdProc is
     constant uppera : std_logic_vector (7 downto 0) := "01000001";
     constant space : std_logic_vector (7 downto 0) := "00100000";
     constant num_ascii : std_logic_vector (3 downto 0) := "0011";
-    constant letter_ascii : std_logic_vector (3 downto 0) := "0100";
+
 
 
 BEGIN
 
 ---------------store byte from rx--------------------------
-rxData_In : process(clk)
+reg_txdone : process(clk)
+--storing data value inputted on the clock edge
+begin
+    if rising_edge(clk) then    
+            txdone_reg <= txdone;
+    end if;
+end process;  
+
+reg_dataReady : process(clk)
+--storing data value inputted on the clock edge
+begin
+    if rising_edge(clk) then    
+            dataReady_reg <= dataReady;
+    end if;
+end process; 
+
+reg_seqDone : process(clk)
+--storing data value inputted on the clock edge
+begin
+    if rising_edge(clk) then    
+            seqDone_reg <= seqDone;
+    end if;
+end process; 
+
+reg_rxdata : process(clk)
 --storing data value inputted on the clock edge
 begin
     if rising_edge(clk) then
-        if rxnow='1' then
+        if rxnow_reg = '1' then
             data_reg <= rxdata;
-            rxdone <= '1';
         end if;
     end if;
-end process;   
+end process;  
 
-
----------------int and nibble to ascii--------------------------
-nibble_to_asc : process(clk)
+reg_byte : process(clk)
 --storing data value inputted on the clock edge
 begin
-    if int1 > 9 then
-        ascii_prefix1 <= letter_ascii;
-    else 
-        ascii_prefix1 <= num_ascii;
+    if rising_edge(clk) then
+        if dataReady = '1' then
+            byte_reg <= byte;
+        end if;
     end if;
-    
-    if int2 = 0 then
-        ascii_prefix2 <= "0010";  
-    elsif int2 < 10 and int2 > 0 then
-        ascii_prefix2 <= num_ascii;
-    else 
-        ascii_prefix2 <= letter_ascii;
-    end if;
+end process; 
 
+reg_rxnow : process(clk)
+begin
+    if rising_edge(clk) then
+        rxnow_reg <= rxnow;
+    end if;
 end process;
-  -----------------------------------------------------
+
   
   
   combi_topNextState: PROCESS(topCurState, clk)
   BEGIN
     CASE topCurState IS
       WHEN INIT =>
-        IF rxNow = '1' THEN 
+        IF rxnow_reg = '1' THEN 
                   topNextState <= INIT_BYTE;
         ELSE
                   topNextState <= INIT;
@@ -259,6 +304,9 @@ end process;
            ELSE
                 topNextState <= LIST_PRINT2;
              END IF;
+             
+             WHEN others =>
+
         
     END CASE;
   END PROCESS; -- combi_nextState
@@ -296,19 +344,17 @@ begin
           nibble1 <= byte(3 downto 0); 
           nibble2 <= byte(7 downto 4); 
           
-          int1 <= TO_INTEGER (UNSIGNED(nibble1));
-          int2 <= TO_INTEGER (UNSIGNED(nibble1));
+          --int1 <= TO_INTEGER (UNSIGNED(nibble1));
+          --int2 <= TO_INTEGER (UNSIGNED(nibble1));
 
 
         when ANNN_BYTE_OUT1  =>
-          to_be_sent(7 downto 4) <= ascii_prefix1; 
-          to_be_sent(3 downto 0) <= nibble1;
+          to_be_sent <= to_ascii(nibble1); 
           enSend <= true;
 
           
         when ANNN_BYTE_OUT2  =>
-          to_be_sent(7 downto 4) <= ascii_prefix2; 
-          to_be_sent(3 downto 0) <= nibble2; 
+          to_be_sent <= to_ascii(nibble2); 
           enSend <= true;
           ANNN_byteCount <= ANNN_byteCount + 1;
 
@@ -318,17 +364,17 @@ begin
 
         when P =>
           peakStore <= dataResults(3); 
-          int1 <= TO_INTEGER (UNSIGNED(peakStore(3 downto 0)));
-          int2 <= TO_INTEGER (UNSIGNED(peakStore(7 downto 4)));
+          --int1 <= TO_INTEGER (UNSIGNED(peakStore(3 downto 0)));
+          --int2 <= TO_INTEGER (UNSIGNED(peakStore(7 downto 4)));
           peakStored <= true;
 
           when P_BYTE1 =>
 
-           to_be_sent <= ascii_prefix1 & peakStore(3 downto 0);           
+           to_be_sent <= to_ascii(peakStore(3 downto 0));           
             enSend <= true;
             
           when P_BYTE2 =>
-           to_be_sent <= ascii_prefix2 & peakStore(7 downto 4);                    
+           to_be_sent <= to_ascii(peakStore(7 downto 4));                    
             enSend <= true;
             
            when P_SPACE =>         
@@ -336,30 +382,30 @@ begin
             enSend <= true;
             
            when P_INDEX1 =>         
-           to_be_sent <= num_ascii & maxIndex(0);          
+           to_be_sent <= to_ascii(maxIndex(0));          
             enSend <= true;
             
          when P_INDEX2 =>         
-            to_be_sent <= num_ascii & maxIndex(1);          
+            to_be_sent <= to_ascii(maxIndex(1));          
             enSend <= true;
             
            when P_INDEX3 =>         
-            to_be_sent <= num_ascii & maxIndex(2);
+            to_be_sent <= to_ascii(maxIndex(2));
            enSend <= true;
            
 
         when LIST_INIT =>
           listStore <= dataResults(listCount); 
-          int1 <= TO_INTEGER (UNSIGNED(listStore(3 downto 0)));
-          int2 <= TO_INTEGER (UNSIGNED(listStore(7 downto 4)));
+          --int1 <= TO_INTEGER (UNSIGNED(listStore(3 downto 0)));
+          --int2 <= TO_INTEGER (UNSIGNED(listStore(7 downto 4)));
           listStored <= true;
             
         when LIST_PRINT1 =>          
-          to_be_sent <= ascii_prefix1 & listStore(3 downto 0);
+          to_be_sent <= to_ascii(listStore(3 downto 0));
           enSend <= true;
                         
         when LIST_PRINT2 =>
-           to_be_sent <= ascii_prefix2 & listStore(7 downto 4);
+           to_be_sent <= to_ascii(listStore(7 downto 4));
            enSend <= true;
            listCount <= listCount + 1;                       
                 
@@ -373,10 +419,12 @@ end process;
 
 txData_Out : process(clk)
 begin
+    rxdone <= '0';
     if rising_edge(clk) then
-        if (topCurState = INIT) and (rxnow = '1') then
+        if (topCurState = INIT)  then --ADD AND RXNOW='1' BACK IN PLSSSSSSSSSSSSSSSS
             txNow <= '1';
             txData <= rxData;
+            rxdone <= '1';
         elsif enSend = true then 
             txNow <= '1';
             txData <= to_be_sent;
