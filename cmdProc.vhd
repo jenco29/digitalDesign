@@ -36,7 +36,7 @@ end cmdProc;
 architecture Behavioral of cmdProc is
 
 -- State declaration for main FSM
-  TYPE state_type IS (INIT, A, AN, ANN, ANNN, ANNN_BYTE_IN, ANNN_BYTE_OUT1, ANNN_BYTE_OUT2 ,P, P_BYTE1, P_BYTE2, P_SPACE, P_INDEX1,P_INDEX2,P_INDEX3, LIST);  -- List your states here 	
+  TYPE state_type IS (INIT, A, AN, ANN, ANNN, ANNN_BYTE_IN, ANNN_BYTE_OUT1, ANNN_BYTE_OUT2 ,P, LIST);  -- List your states here 	
   SIGNAL topCurState, topNextState: state_type;
     
    signal nibbleIndex : integer;
@@ -148,34 +148,9 @@ end process;
         END IF;
                
               WHEN ANNN =>
-        IF (data_reg(7 downto 4) = num_ascii) and ((TO_INTEGER(UNSIGNED(data_reg))) > 47) and ((TO_INTEGER(UNSIGNED(data_reg))) < 58) THEN 
-            topNextState <= ANNN_BYTE_IN;
-        ELSE
-            topNextState <= INIT;
-        END IF;
-               
-        WHEN ANNN_BYTE_IN =>
-        IF dataReady = '1' THEN 
-            topNextState <= ANNN_BYTE_OUT1;
-        END IF;
-               
-        WHEN ANNN_BYTE_OUT1 =>
-        IF ANNN_nibble1Sent = true and txDone='1' THEN 
-            topNextState <= ANNN_BYTE_OUT2;
-        END IF;
-        
-        
-        WHEN ANNN_BYTE_OUT2 =>
-        IF ANNN_nibble2Sent = true and txdone='1'THEN 
-            IF ANNN_byteCount < NNN-1 THEN
-                ANNN_nibble2Sent <= false;
-                topNextState <= ANNN_BYTE_OUT1;               
-            ELSE
-            topNextState <= ANNN_BYTE_OUT2;
-            END IF;          
-        ELSE
-        topNextState <= INIT;
-        END IF;
+                    IF ANNN_byteCount > NNN THEN
+                        topNextState <= INIT;
+                    END IF;          
         
              
         WHEN P =>
@@ -225,35 +200,28 @@ begin
           numwords_bcd(0) <= ANNN_reg(0);
           numwords_bcd(1) <= ANNN_reg(1);
           numwords_bcd(2) <= ANNN_reg(2);
-          ANNN_nibble1Sent <= false; 
-          ANNN_nibble2Sent <= false; 
-
-
-        
-        when ANNN_BYTE_IN   =>           
+              
           nibble1 <= byte(3 downto 0); 
           nibble2 <= byte(7 downto 4); 
           
           int1 <= TO_INTEGER (UNSIGNED(nibble1));
           int2 <= TO_INTEGER (UNSIGNED(nibble1));
 
-
-        when ANNN_BYTE_OUT1  =>
           to_be_sent(7 downto 4) <= ascii_prefix1; 
           to_be_sent(3 downto 0) <= nibble1;
-                      enSend <= true;
-          ANNN_nibble1Sent <= true; 
+          enSend <= true;
           
-        when ANNN_BYTE_OUT2  =>
           to_be_sent(7 downto 4) <= ascii_prefix2; 
           to_be_sent(3 downto 0) <= nibble2; 
           enSend <= true;
           ANNN_byteCount <= ANNN_byteCount + 1;
-          ANNN_nibble2Sent <= true;
+
 
         when P =>
-           start <= '0';
+
             p_printed <= false;
+        IF dataReady='1' then
+
            peakStore <= dataResults(3); 
           int1 <= TO_INTEGER (UNSIGNED(peakStore(3 downto 0)));
           int2 <= TO_INTEGER (UNSIGNED(peakStore(7 downto 4)));
@@ -276,6 +244,7 @@ begin
            to_be_sent <= num_ascii & maxIndex(2);
            enSend <= true;
            p_printed <= true;
+           end if;
    
         when LIST =>
             IF dataReady='1' then
