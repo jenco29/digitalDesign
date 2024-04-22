@@ -60,7 +60,7 @@ function to_ascii(value : std_logic_vector) return std_logic_vector is
  end function;
 
 -- State declaration for main FSM
-  TYPE state_type IS (INIT, DATA_ECHO, INIT_BYTE, A, AN, ANN, ANNN, ANNN_BYTE_IN, ANNN_BYTE_OUT1, ANNN_BYTE_OUT2, ANNN_DONE ,P, P_BYTE1, P_BYTE2, P_SPACE, P_INDEX1,P_INDEX2,P_INDEX3, LIST_INIT, LIST_PRINT1, LIST_PRINT2);  -- List your states here 	
+  TYPE state_type IS (INIT, DATA_ECHO, INIT_BYTE, A, A_WAIT, AN, AN_WAIT, ANN, ANN_WAIT, ANNN,ANNN_WAIT, ANNN_BYTE_IN, ANNN_BYTE_OUT1, ANNN_BYTE_OUT2, ANNN_DONE ,P, P_BYTE1, P_BYTE2, P_SPACE, P_INDEX1,P_INDEX2,P_INDEX3, LIST_INIT, LIST_PRINT1, LIST_PRINT2);  -- List your states here 	
   SIGNAL topCurState, topNextState: state_type;
     
     signal data_reg, byte_reg: std_logic_vector(7 downto 0);   -- data_reg: register to synchronously store byte from rx
@@ -71,7 +71,7 @@ function to_ascii(value : std_logic_vector) return std_logic_vector is
     signal nibble1, nibble2: std_logic_vector(3 downto 0);
     signal peakStore, listStore: std_logic_vector(7 downto 0);
     
-    signal ListCount, ANNN_byteCount,NNN : integer :=0;
+    signal ListCount, ANNN_byteCount,NNN,digitCount : integer :=0;
 
     signal enSend, enSent, peakStored, listStored, NNNStored, start_data_echo : boolean := false;
 
@@ -131,6 +131,26 @@ begin
     end if;
 end process;
 
+SET_ANN_REG : process(clk)
+begin    
+    if rising_edge(clk) and topCurState = INIT then
+              ANNN_reg(0) <= "0000";
+              ANNN_reg(1) <= "0000";
+              ANNN_reg(2) <= "0000";
+    else
+              ANNN_reg(digitCount+1) <= data_reg(3 downto 0);
+    end if;
+end process;
+
+SET_NUMWORDS_REG : process(clk)
+begin    
+    if rising_edge(clk) then
+          numwords_bcd(2) <= ANNN_reg(0);
+          numwords_bcd(1) <= ANNN_reg(1);
+          numwords_bcd(0) <= ANNN_reg(2);   
+    end if;
+end process;
+
 reg_byte : process(clk)
 --storing data value inputted on the clock edge
 begin
@@ -176,30 +196,58 @@ end process;
         
       WHEN A =>
         IF (data_reg(7 downto 4) = num_ascii) and (rxNow_reg='1') and ((TO_INTEGER(UNSIGNED(data_reg))) > 47) and ((TO_INTEGER(UNSIGNED(data_reg))) < 58) THEN 
-            topNextState <= AN;
+            topNextState <= A_WAIT;
         ELSE 
             topNextState <= A;
+        END IF;
+        
+         WHEN A_WAIT =>
+        IF (data_reg(7 downto 4) = num_ascii) and (rxNow_reg='0') and ((TO_INTEGER(UNSIGNED(data_reg))) > 47) and ((TO_INTEGER(UNSIGNED(data_reg))) < 58) THEN 
+            topNextState <= AN;
+        ELSE
+            topNextState <= A_WAIT;
         END IF;
              
               WHEN AN =>
         IF (data_reg(7 downto 4) = num_ascii) and (rxNow_reg='1') and ((TO_INTEGER(UNSIGNED(data_reg))) > 47) and ((TO_INTEGER(UNSIGNED(data_reg))) < 58) THEN 
-            topNextState <= ANN;
+            topNextState <= AN_WAIT;
         ELSE
             topNextState <= AN;
         END IF;
-               
-              WHEN ANN =>
+ 
+          WHEN AN_WAIT =>
+        IF (data_reg(7 downto 4) = num_ascii) and (rxNow_reg='0') and ((TO_INTEGER(UNSIGNED(data_reg))) > 47) and ((TO_INTEGER(UNSIGNED(data_reg))) < 58) THEN 
+            topNextState <= ANN;
+        ELSE
+            topNextState <= AN_WAIT;
+        END IF;
+                             
+            WHEN ANN =>
         IF (data_reg(7 downto 4) = num_ascii) and (rxNow_reg='1')and ((TO_INTEGER(UNSIGNED(data_reg))) > 47) and ((TO_INTEGER(UNSIGNED(data_reg))) < 58) THEN 
-            topNextState <= ANNN;
+            topNextState <= ANN_WAIT;
         ELSE
             topNextState <= ANN;
         END IF;
-               
-              WHEN ANNN =>
+ 
+          WHEN ANN_WAIT =>
+        IF (data_reg(7 downto 4) = num_ascii) and (rxNow_reg='0') and ((TO_INTEGER(UNSIGNED(data_reg))) > 47) and ((TO_INTEGER(UNSIGNED(data_reg))) < 58) THEN 
+            topNextState <= ANNN;
+        ELSE
+            topNextState <= ANN_WAIT;
+        END IF;
+                      
+         WHEN ANNN =>
         IF NNNStored = true THEN 
-            topNextState <= ANNN_BYTE_IN;
+            topNextState <= ANNN_WAIT;
         ELSE
             topNextState <= ANNN;
+        END IF;
+        
+                  WHEN ANNN_WAIT =>
+        IF (data_reg(7 downto 4) = num_ascii) and (rxNow_reg='0') and ((TO_INTEGER(UNSIGNED(data_reg))) > 47) and ((TO_INTEGER(UNSIGNED(data_reg))) < 58) THEN 
+            topNextState <= ANNN_BYTE_IN;
+        ELSE
+            topNextState <= ANNN_WAIT;
         END IF;
                
         WHEN ANNN_BYTE_IN =>
@@ -328,23 +376,26 @@ begin
            -- numWords_bcd(2) <= "0000";
 
         when A => 
-          ANNN_reg(0) <= data_reg(3 downto 0);
+          --ANNN_reg(0) <= data_reg(3 downto 0);
           
-        when AN => 
-          ANNN_reg(1) <= data_reg(3 downto 0);
+        when AN_WAIT => 
+          --ANNN_reg(1) <= data_reg(3 downto 0);
+          digitCount <= 0;
                         
           
-        when ANN => 
-          ANNN_reg(2) <= data_reg(3 downto 0);
-    
+        when ANN_WAIT => 
+          --ANNN_reg(2) <= data_reg(3 downto 0);
+              digitCount <= 1;
+
                   
-        when ANNN => --start proc
+        when ANNN_WAIT => --start proc
           NNN <= ( (TO_INTEGER(UNSIGNED(ANNN_reg(0)))) + (TO_INTEGER(UNSIGNED(ANNN_reg(1)))*10) + (TO_INTEGER(UNSIGNED(ANNN_reg(2)))*100));
           start <= '1'; 
-          numwords_bcd(0) <= ANNN_reg(0);
-          numwords_bcd(1) <= ANNN_reg(1);
-          numwords_bcd(2) <= ANNN_reg(2);
+          --numwords_bcd(2) <= ANNN_reg(0);
+          --numwords_bcd(1) <= ANNN_reg(1);
+          --numwords_bcd(0) <= ANNN_reg(2);
           NNNStored <= true;
+          digitCount <= 2;
 
         
         when ANNN_BYTE_IN   =>           
