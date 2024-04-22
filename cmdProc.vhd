@@ -172,24 +172,24 @@ end process;
         
         
       WHEN A =>
-        IF (data_reg(7 downto 0) = num_ascii) and ((TO_INTEGER(UNSIGNED(data_reg))) > 47) and ((TO_INTEGER(UNSIGNED(data_reg))) < 58) THEN 
+        IF (data_reg(7 downto 4) = num_ascii) and ((TO_INTEGER(UNSIGNED(data_reg))) > 47) and ((TO_INTEGER(UNSIGNED(data_reg))) < 58) THEN 
             topNextState <= AN;
-        ELSE
-            topNextState <= INIT;
+        ELSE 
+            topNextState <= A;
         END IF;
              
               WHEN AN =>
-        IF (data_reg(7 downto 0) = num_ascii) and ((TO_INTEGER(UNSIGNED(data_reg))) > 47) and ((TO_INTEGER(UNSIGNED(data_reg))) < 58) THEN 
+        IF (data_reg(7 downto 4) = num_ascii) and ((TO_INTEGER(UNSIGNED(data_reg))) > 47) and ((TO_INTEGER(UNSIGNED(data_reg))) < 58) THEN 
             topNextState <= ANN;
         ELSE
-            topNextState <= INIT;
+            topNextState <= AN;
         END IF;
                
               WHEN ANN =>
-        IF (data_reg(7 downto 0) = num_ascii) and ((TO_INTEGER(UNSIGNED(data_reg))) > 47) and ((TO_INTEGER(UNSIGNED(data_reg))) < 58) THEN 
+        IF (data_reg(7 downto 4) = num_ascii) and ((TO_INTEGER(UNSIGNED(data_reg))) > 47) and ((TO_INTEGER(UNSIGNED(data_reg))) < 58) THEN 
             topNextState <= ANNN;
         ELSE
-            topNextState <= INIT;
+            topNextState <= ANN;
         END IF;
                
               WHEN ANNN =>
@@ -430,7 +430,7 @@ begin
         elsif enSend = true then 
             txNow <= '1';
             txData <= to_be_sent;
-            if txDone = '1' then   
+            if txDone_reg = '1' then   
                   txNow <= '0';        
                   enSent <=true;  
             end if;      
@@ -440,14 +440,18 @@ end process;
 
 data_echoing : process(clk)
 begin
+    if rising_edge(clk) then
+
      if  start_data_echo = true then
+            rxdone <= '0';           
             txNow <= '1';
             txData <= data_reg;
         if txDone = '1' then           
-                rxdone <= '1';
-                 txNow <= '0';
+             rxdone <= '1';
+             txNow <= '0';
          end if;
-    end if;      
+    end if;     
+    end if; 
 end process;
   ---------------next state seq------------------------
   
