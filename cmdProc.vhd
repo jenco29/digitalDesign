@@ -73,7 +73,7 @@ function to_ascii(value : std_logic_vector) return std_logic_vector is
     
     signal ListCount, ANNN_byteCount,NNN : integer :=0;
 
-    signal enSend, enSent, peakStored, listStored, NNNStored : boolean := false;
+    signal enSend, enSent, peakStored, listStored, NNNStored, start_data_echo : boolean := false;
 
     signal rxnow_reg, txdone_reg, dataReady_reg, seqDone_reg  : std_logic;
     signal maxIndex_reg : BCD_ARRAY_TYPE(3 downto 0);
@@ -419,21 +419,32 @@ end process;
 
 txData_Out : process(clk)
 begin
-    rxdone <= '1';
     if rising_edge(clk) then
-        if (topCurState = INIT)  then --ADD AND RXNOW='1' BACK IN PLSSSSSSSSSSSSSSSS
-            txNow <= '1';
-            txData <= rxData;
-            rxdone <= '1';
+        if (topCurState = INIT and rxNow = '1')  then --ADD AND RXNOW='1' BACK IN PLSSSSSSSSSSSSSSSS
+               start_data_echo <= true;
         elsif enSend = true then 
             txNow <= '1';
             txData <= to_be_sent;
-            enSent <=true;         
+            if txDone = '1' then   
+                  txNow <= '0';        
+                  enSent <=true;  
+            end if;      
         end if;      
-     txNow <= '0';
     end if;
 end process;
 
+data_echoing : process(clk)
+begin
+    if rising_edge(clk) and start_data_echo = true then
+        if rxNow = '1' then --ADD AND RXNOW='1' BACK IN PLSSSSSSSSSSSSSSSS
+            txNow <= '1';
+            txData <= data_reg;
+        elsif txDone = '1' then           
+                rxdone <= '1';
+                 txNow <= '0';
+            end if;
+        end if;      
+end process;
   ---------------next state seq------------------------
   
 --progress to next state  
