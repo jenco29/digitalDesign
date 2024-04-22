@@ -65,13 +65,13 @@ function to_ascii(value : std_logic_vector) return std_logic_vector is
     
     signal data_reg, byte_reg: std_logic_vector(7 downto 0);   -- data_reg: register to synchronously store byte from rx
 
-    signal to_be_sent: std_logic_vector(7 downto 0); --to store the next byte to be sent to tx in hex
+    signal to_be_sent,sending: std_logic_vector(7 downto 0); --to store the next byte to be sent to tx in hex
     signal ANNN_reg : BCD_ARRAY_TYPE(2 downto 0); -- N registers
     
     signal nibble1, nibble2: std_logic_vector(3 downto 0);
     signal peakStore, listStore: std_logic_vector(7 downto 0);
     
-    signal ListCount, ANNN_byteCount,NNN : integer :=0;
+    signal ListCount, ANNN_byteCount,NNN,digitCount : integer :=0;
 
     signal enSend, enSent, peakStored, listStored, NNNStored, start_data_echo : boolean := false;
 
@@ -132,49 +132,23 @@ begin
 end process;
 
 SET_ANN_REG : process(clk)
-
 begin    
-
-    if rising_edge(clk) then
-
-        if topCurState = INIT then
-
+    if rising_edge(clk) and topCurState = INIT then
               ANNN_reg(0) <= "0000";
-
               ANNN_reg(1) <= "0000";
-
               ANNN_reg(2) <= "0000";
-
-        elsif topCurState = AN then
-
-            ANNN_reg(2) <= data_reg(3 downto 0);
-
-        elsif topCurState = ANN then
-
-            ANNN_reg(1) <= data_reg(3 downto 0);
-
-        elsif topCurState = ANNN then
-
-            ANNN_reg(0) <= data_reg(3 downto 0);
-
-        end if;
-
-    --else
-
+    else
+              ANNN_reg(digitCount+1) <= data_reg(3 downto 0);
     end if;
-
 end process;
 
 SET_NUMWORDS_REG : process(clk)
-
 begin    
-
     if rising_edge(clk) then
-
-          numwords_bcd <= ANNN_reg;
-
+          numwords_bcd(2) <= ANNN_reg(0);
+          numwords_bcd(1) <= ANNN_reg(1);
+          numwords_bcd(0) <= ANNN_reg(2);   
     end if;
-
 end process;
 
 reg_byte : process(clk)
@@ -289,7 +263,7 @@ end process;
         IF enSent = true THEN 
         
             IF ANNN_byteCount < ((2*NNN)-1) THEN
-                topNextState <= ANNN_BYTE_OUT1;               
+                topNextState <= ANNN_BYTE_IN;               
             ELSE
                 topNextState <= ANNN_DONE;
             END IF;       
@@ -390,23 +364,37 @@ begin
         
         when INIT =>
             start <= '0';
-            txNow <='0';
-            enSend <=false;
+            to_be_sent <= data_reg;
+            --numWords_bcd(0) <= "0000";
+           -- numWords_bcd(1) <= "0000";
+           -- numWords_bcd(2) <= "0000";
 
         when A => 
+          --ANNN_reg(0) <= data_reg(3 downto 0);
           
         when AN_WAIT => 
+          --ANNN_reg(1) <= data_reg(3 downto 0);
+          digitCount <= 0;
                         
           
         when ANN_WAIT => 
           --ANNN_reg(2) <= data_reg(3 downto 0);
+              digitCount <= 1;
+
                   
         when ANNN => --start proc
          NNN <= ( (TO_INTEGER(UNSIGNED(ANNN_reg(0)))*100) + (TO_INTEGER(UNSIGNED(ANNN_reg(1)))*10) + (TO_INTEGER(UNSIGNED(ANNN_reg(2)))));
           start <= '1'; 
+          --numwords_bcd(2) <= ANNN_reg(0);
+          --numwords_bcd(1) <= ANNN_reg(1);
+          --numwords_bcd(0) <= ANNN_reg(2);
           NNNStored <= true;
+         -- digitCount <= 2;
+
         
-        when ANNN_BYTE_IN   =>           
+        when ANNN_BYTE_IN   =>   
+                  start <= '0'; 
+        
           nibble1 <= byte_reg(3 downto 0); 
           nibble2 <= byte_reg(7 downto 4); 
           enSend <=false;
@@ -423,7 +411,7 @@ begin
         when ANNN_BYTE_OUT2  =>
           to_be_sent <= to_ascii(nibble2); 
           enSend <= true;
-          ANNN_byteCount <= ANNN_byteCount + 1;
+          --ANNN_byteCount <= ANNN_byteCount + 1;
 
           
         when ANNN_DONE => 
@@ -487,22 +475,47 @@ end process;
 txData_Out : process(clk)
 begin
     if rising_edge(clk) then
-        if (rxnow_reg = '1')  then --ADD AND RXNOW='1' BACK IN PLSSSSSSSSSSSSSSSS
-               --start_data_echo <= true;
-               
-        elsif enSend = true then 
+        if rxnow_reg = '1'  then --ADD AND RXNOW='1' BACK IN PLSSSSSSSSSSSSSSSS              
             txNow <= '1';
-            txData <= to_be_sent;
-            if txDone_reg = '1' then   
-                  txNow <= '0';        
-                  enSent <=true;  
-               else
-                txData <= to_be_sent;
-            end if;      
+        elsif enSend = true then   
+             txNow <= '1';        
+       else 
+          txNow <= '0';        
         end if;      
     end if;
 end process;
 
+txData_byte_count : process(clk)
+begin
+    if rising_edge(clk) then
+            if dataReady = '1' then    
+                  ANNN_byteCount <= ANNN_byteCount + 1;
+            end if;
+    end if;
+end process;
+
+txData_Out2 : process(clk)
+begin
+    if rising_edge(clk) then
+            txData <= sending;
+            if txDone_reg = '1' then   
+                  enSent <=true;  
+            else
+                  enSent <=false;  
+            end if;
+    end if;
+end process;
+
+txData_Out3 : process(clk)
+begin
+    if rising_edge(clk) then
+            if topCurState = ANNN or topCurState = ANNN_BYTE_IN or topCurState = ANNN_BYTE_OUT1 or topCurState = ANNN_BYTE_OUT2 or topCurState = ANNN_DONE then   
+                  sending <=to_be_sent;  
+            else
+                  sending <=data_reg;  
+            end if;
+    end if;
+end process;
 
   ---------------next state seq------------------------
   
