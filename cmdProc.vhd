@@ -384,7 +384,7 @@ begin
 
                   
         when ANNN => --start proc
-         NNN <= ( (TO_INTEGER(UNSIGNED(ANNN_reg(0)))) + (TO_INTEGER(UNSIGNED(ANNN_reg(1)))*10) + (TO_INTEGER(UNSIGNED(ANNN_reg(2)))*100));
+         NNN <= ( (TO_INTEGER(UNSIGNED(ANNN_reg(0)))*100) + (TO_INTEGER(UNSIGNED(ANNN_reg(1)))*10) + (TO_INTEGER(UNSIGNED(ANNN_reg(2)))));
           start <= '1'; 
           --numwords_bcd(2) <= ANNN_reg(0);
           --numwords_bcd(1) <= ANNN_reg(1);
@@ -482,7 +482,7 @@ begin
             txData <= to_be_sent;
             if txDone_reg = '1' then   
                   txNow <= '0';        
-                  enSent <=false;  
+                  enSent <=true;  
         else
                 txData <= data_reg;
             end if;      
