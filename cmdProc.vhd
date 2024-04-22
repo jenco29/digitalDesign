@@ -142,6 +142,18 @@ begin
     end if;
 end process;
 
+SET_start : process(clk)
+begin   
+    if rising_edge(clk) and topCurState = ANNN then
+          --NNN <= ( (TO_INTEGER(UNSIGNED(ANNN_reg(0)))) + (TO_INTEGER(UNSIGNED(ANNN_reg(1)))*10) + (TO_INTEGER(UNSIGNED(ANNN_reg(2)))*100));
+          start <= '1'; 
+          --NNNStored <= true;
+          --digitCount <= 2;
+    ELSE
+              start <= '0'; 
+    END IF;
+end process;
+
 SET_NUMWORDS_REG : process(clk)
 begin    
     if rising_edge(clk) then
@@ -172,6 +184,7 @@ end process;
   
   combi_topNextState: PROCESS(topCurState, clk)
   BEGIN
+  
     CASE topCurState IS
       WHEN INIT =>
         IF rxnow_reg = '1' THEN 
@@ -237,18 +250,12 @@ end process;
         END IF;
                       
          WHEN ANNN =>
-        IF NNNStored = true THEN 
-            topNextState <= ANNN_WAIT;
+        IF (data_reg(7 downto 4) = num_ascii) and (rxNow_reg='0') and ((TO_INTEGER(UNSIGNED(data_reg))) > 47) and ((TO_INTEGER(UNSIGNED(data_reg))) < 58) THEN 
+            topNextState <= ANNN_BYTE_IN;
         ELSE
             topNextState <= ANNN;
         END IF;
         
-                  WHEN ANNN_WAIT =>
-        IF (data_reg(7 downto 4) = num_ascii) and (rxNow_reg='0') and ((TO_INTEGER(UNSIGNED(data_reg))) > 47) and ((TO_INTEGER(UNSIGNED(data_reg))) < 58) THEN 
-            topNextState <= ANNN_BYTE_IN;
-        ELSE
-            topNextState <= ANNN_WAIT;
-        END IF;
                
         WHEN ANNN_BYTE_IN =>
         IF dataReady = '1' THEN 
@@ -366,10 +373,12 @@ end process;
   --processes on fsm states
 state_logic : process(topCurState, clk)
 begin
+    if rising_edge(clk) then    
+
     case topCurState is
         
         when INIT =>
-            start <= '0';
+            --start <= '0';
             txNow <='0';
             --numWords_bcd(0) <= "0000";
            -- numWords_bcd(1) <= "0000";
@@ -389,12 +398,12 @@ begin
 
                   
         when ANNN_WAIT => --start proc
-          NNN <= ( (TO_INTEGER(UNSIGNED(ANNN_reg(0)))) + (TO_INTEGER(UNSIGNED(ANNN_reg(1)))*10) + (TO_INTEGER(UNSIGNED(ANNN_reg(2)))*100));
-          start <= '1'; 
+         -- NNN <= ( (TO_INTEGER(UNSIGNED(ANNN_reg(0)))) + (TO_INTEGER(UNSIGNED(ANNN_reg(1)))*10) + (TO_INTEGER(UNSIGNED(ANNN_reg(2)))*100));
+          --start <= '1'; 
           --numwords_bcd(2) <= ANNN_reg(0);
           --numwords_bcd(1) <= ANNN_reg(1);
           --numwords_bcd(0) <= ANNN_reg(2);
-          NNNStored <= true;
+         -- NNNStored <= true;
           digitCount <= 2;
 
         
@@ -471,6 +480,7 @@ begin
         when others =>
             -- do nothing
     end case;
+   end if;
 end process;
 
   ----------------output to tx--------------------------
