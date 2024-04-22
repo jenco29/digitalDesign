@@ -124,9 +124,12 @@ begin
     if rising_edge(clk) then
         if rxnow_reg = '1' then
             data_reg <= rxdata;
+            rxDone <= '1';
+        else
+            rxDone <= '0';
         end if;
     end if;
-end process;  
+end process;
 
 reg_byte : process(clk)
 --storing data value inputted on the clock edge
@@ -179,14 +182,14 @@ end process;
         END IF;
              
               WHEN AN =>
-        IF (data_reg(7 downto 4) = num_ascii) and ((TO_INTEGER(UNSIGNED(data_reg))) > 47) and ((TO_INTEGER(UNSIGNED(data_reg))) < 58) THEN 
+        IF (data_reg(7 downto 4) = num_ascii) and (rxNow_reg='1') and ((TO_INTEGER(UNSIGNED(data_reg))) > 47) and ((TO_INTEGER(UNSIGNED(data_reg))) < 58) THEN 
             topNextState <= ANN;
         ELSE
             topNextState <= AN;
         END IF;
                
               WHEN ANN =>
-        IF (data_reg(7 downto 4) = num_ascii) and ((TO_INTEGER(UNSIGNED(data_reg))) > 47) and ((TO_INTEGER(UNSIGNED(data_reg))) < 58) THEN 
+        IF (data_reg(7 downto 4) = num_ascii) and (rxNow_reg='1')and ((TO_INTEGER(UNSIGNED(data_reg))) > 47) and ((TO_INTEGER(UNSIGNED(data_reg))) < 58) THEN 
             topNextState <= ANNN;
         ELSE
             topNextState <= ANN;
@@ -318,7 +321,6 @@ begin
     case topCurState is
         
         when INIT =>
-            rxdone <= '0';
             start <= '0';
             txNow <='0';
             --numWords_bcd(0) <= "0000";
@@ -432,7 +434,7 @@ begin
             txData <= to_be_sent;
             if txDone_reg = '1' then   
                   txNow <= '0';        
-                  enSent <=true;  
+                  enSent <=false;  
             end if;      
         end if;      
     end if;
@@ -443,15 +445,16 @@ begin
     if rising_edge(clk) then
 
      if  start_data_echo = true then
-            rxdone <= '0';           
+            --rxdone <= '0';           
             txNow <= '1';
             txData <= data_reg;
-        if txDone = '1' then           
-             rxdone <= '1';
+            start_data_echo <= false;
+    end if;
+    if txDone = '1' then           
+             --rxdone <= '1';
              txNow <= '0';
-         end if;
-    end if;     
-    end if; 
+    end if;
+    end if;   
 end process;
   ---------------next state seq------------------------
   
