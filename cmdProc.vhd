@@ -66,7 +66,7 @@ function to_ascii(value : std_logic_vector) return std_logic_vector is
     signal data_reg, byte_reg: std_logic_vector(7 downto 0);   -- data_reg: register to synchronously store byte from rx
 
     signal to_be_sent: std_logic_vector(7 downto 0); --to store the next byte to be sent to tx in hex
-    signal ANNN_reg : BCD_ARRAY_TYPE(3 downto 0); -- N registers
+    signal ANNN_reg : BCD_ARRAY_TYPE(2 downto 0); -- N registers
     
     signal nibble1, nibble2: std_logic_vector(3 downto 0);
     signal peakStore, listStore: std_logic_vector(7 downto 0);
@@ -172,7 +172,7 @@ end process;
         
         
       WHEN A =>
-        IF (data_reg(7 downto 4) = num_ascii) and ((TO_INTEGER(UNSIGNED(data_reg))) > 47) and ((TO_INTEGER(UNSIGNED(data_reg))) < 58) THEN 
+        IF (data_reg(7 downto 4) = num_ascii) and (rxNow_reg='1') and ((TO_INTEGER(UNSIGNED(data_reg))) > 47) and ((TO_INTEGER(UNSIGNED(data_reg))) < 58) THEN 
             topNextState <= AN;
         ELSE 
             topNextState <= A;
@@ -321,9 +321,9 @@ begin
             rxdone <= '0';
             start <= '0';
             txNow <='0';
-            numWords_bcd(0) <= "0000";
-            numWords_bcd(1) <= "0000";
-            numWords_bcd(2) <= "0000";
+            --numWords_bcd(0) <= "0000";
+           -- numWords_bcd(1) <= "0000";
+           -- numWords_bcd(2) <= "0000";
 
         when A => 
           ANNN_reg(0) <= data_reg(3 downto 0);
