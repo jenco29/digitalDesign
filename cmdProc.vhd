@@ -427,14 +427,18 @@ end process;
 txData_Out : process(clk)
 begin
     if rising_edge(clk) then
-        if (topCurState = INIT and rxnow_reg = '1')  then --ADD AND RXNOW='1' BACK IN PLSSSSSSSSSSSSSSSS
+        if (rxnow_reg = '1')  then --ADD AND RXNOW='1' BACK IN PLSSSSSSSSSSSSSSSS
                start_data_echo <= true;
+               
         elsif enSend = true then 
             txNow <= '1';
             txData <= to_be_sent;
             if txDone_reg = '1' then   
                   txNow <= '0';        
                   enSent <=false;  
+        else
+                    start_data_echo <= false;
+
             end if;      
         end if;      
     end if;
@@ -448,7 +452,6 @@ begin
             --rxdone <= '0';           
             txNow <= '1';
             txData <= data_reg;
-            start_data_echo <= false;
     end if;
     if txDone = '1' then           
              --rxdone <= '1';
