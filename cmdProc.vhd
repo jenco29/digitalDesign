@@ -318,7 +318,12 @@ begin
     case topCurState is
         
         when INIT =>
-
+            rxdone <= '0';
+            start <= '0';
+            txNow <='0';
+            numWords_bcd(0) <= "0000";
+            numWords_bcd(1) <= "0000";
+            numWords_bcd(2) <= "0000";
 
         when A => 
           ANNN_reg(0) <= data_reg(3 downto 0);
@@ -420,7 +425,7 @@ end process;
 txData_Out : process(clk)
 begin
     if rising_edge(clk) then
-        if (topCurState = INIT and rxNow = '1')  then --ADD AND RXNOW='1' BACK IN PLSSSSSSSSSSSSSSSS
+        if (topCurState = INIT and rxnow_reg = '1')  then --ADD AND RXNOW='1' BACK IN PLSSSSSSSSSSSSSSSS
                start_data_echo <= true;
         elsif enSend = true then 
             txNow <= '1';
@@ -435,15 +440,14 @@ end process;
 
 data_echoing : process(clk)
 begin
-    if rising_edge(clk) and start_data_echo = true then
-        if rxNow = '1' then --ADD AND RXNOW='1' BACK IN PLSSSSSSSSSSSSSSSS
+     if  start_data_echo = true then
             txNow <= '1';
             txData <= data_reg;
-        elsif txDone = '1' then           
+        if txDone = '1' then           
                 rxdone <= '1';
                  txNow <= '0';
-            end if;
-        end if;      
+         end if;
+    end if;      
 end process;
   ---------------next state seq------------------------
   
