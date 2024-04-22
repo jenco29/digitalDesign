@@ -29,24 +29,28 @@ signal curState, nextState: state_type;
 -- max_index: position of largest currently known data point
 -- num_words_reg: stores desired number of words from input
 signal index, max_index, num_words_reg: integer range 0 to SEQ_LENGTH -1;
+-- temp #EXPLAIN
 signal temp : integer;
 -- data_reg: register to synchronously store current data point
 signal data_reg: std_logic_vector(7 downto 0);
+-- #EXPLAIN
+signal en_num_words, en_set_max, en_store, en_send : boolean;
 -- ctrl_out_reg: stores current value of output to data generator, used for toggling
 -- ctrlIn_delayed, ctrlIn_detected: values used in logic for finding change in signal from data generator
--- read_done: 
--- dataReady_reg: 
-signal en_num_words, en_set_max, en_store, en_send : boolean;
+-- read_done: #EXPLAIN
+-- dataReady_reg: #EXPLAIN
 signal ctrl_out_reg, ctrlIn_delayed, ctrlIn_detected, read_done, dataReady_reg, start_reg : std_logic;
+-- data_results_reg: An array of data values storing the peak and surrounding bytes
 signal data_results_reg : CHAR_ARRAY_TYPE(0 to RESULT_BYTE_NUM-1);
+-- max_ind_bcd: A register locally storing the result of converting the index of the peak to a BCD value, which is then outputted
 signal max_ind_bcd : BCD_ARRAY_TYPE(0 to 2);
 type INT_ARRAY is array (integer range<>) of integer;
 -- data_store: register that stores full sequence of data points from data generator
 signal data_store : CHAR_ARRAY_TYPE(0 to SEQ_LENGTH -1);
-signal bcd_sum, digits, mod_list: INT_ARRAY(2 downto 0);
 
 begin
 
+-- process to store each incoming byte on the clock when data is to be read
 store_data : process(clk)
 begin
     if rising_edge(clk) then
@@ -60,21 +64,23 @@ begin
     end if;
 end process;
 
+-- process that converts the index of the peak to a BCD value
 int_to_bcd : process(clk)
 begin
     if rising_edge(clk) then
-        if curState = set_digit1 then
+        if curState = set_digit1 then -- set the unit digit of the BCD value
             max_ind_bcd(0) <= std_logic_vector(to_unsigned(max_index mod 10, BCD_WORD_LENGTH));
             temp <= (max_index - max_index mod 10) / 10; 
-        elsif curState = set_digit2 then
+        elsif curState = set_digit2 then -- set the tens digit of the BCD value
             max_ind_bcd(1) <= std_logic_vector(to_unsigned(temp mod 10, BCD_WORD_LENGTH));
             temp <= (temp - temp mod 10) / 10;
-        elsif curState = set_digit3 then
+        elsif curState = set_digit3 then -- set the hundreds digit of the BCD value
             max_ind_bcd(2) <= std_logic_vector(to_unsigned(temp mod 10, BCD_WORD_LENGTH));
         end if;
     end if;
 end process;
 
+-- process to read in fromt he command processor the number of data points required, and convert it from BCD to an integer
 set_num_words : process(clk)
 begin
     if rising_edge(clk) then
