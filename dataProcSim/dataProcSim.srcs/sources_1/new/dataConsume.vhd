@@ -126,22 +126,16 @@ begin
     end if;
 end process;
 
---storing data value inputted on the clock edge
+--storing data value inputted on the clock edge and setting ctrlIn_detected to signal change in input signal
 reg_data : process(clk)
 begin
     if rising_edge(clk) then
         data_reg <= data;
         start_reg <= start;
+        ctrlIn_delayed <= ctrlIn;
     end if;
 end process;  
 
---setting ctrlIn_detected to signal change in input signal
-delay_CtrlIn: process(clk)     
-begin
-  if rising_edge(clk) then
-    ctrlIn_delayed <= ctrlIn;
-  end if;
-end process;
 
 count : process(clk)
 begin

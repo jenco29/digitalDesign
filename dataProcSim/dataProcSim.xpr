@@ -4,7 +4,7 @@
 <!-- Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.                   -->
 <!-- Copyright 2022-2023 Advanced Micro Devices, Inc. All Rights Reserved.   -->
 
-<Project Product="Vivado" Version="7" Minor="65" Path="C:/Users/jenni/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/dataProcSim/dataProcSim.xpr">
+<Project Product="Vivado" Version="7" Minor="65" Path="C:/Users/jenni/digitalDesign/dataProcSim/dataProcSim.xpr">
   <DefaultLaunch Dir="$PRUNDIR"/>
   <Configuration>
     <Option Name="Id" Val="7f63bd52dcbf4a8e855c80676ac3b014"/>
@@ -59,7 +59,7 @@
     <Option Name="IPStaticSourceDir" Val="$PIPUSERFILESDIR/ipstatic"/>
     <Option Name="EnableBDX" Val="FALSE"/>
     <Option Name="FeatureSet" Val="FeatureSet_Classic"/>
-    <Option Name="WTXSimLaunchSim" Val="324"/>
+    <Option Name="WTXSimLaunchSim" Val="325"/>
     <Option Name="WTModelSimLaunchSim" Val="0"/>
     <Option Name="WTQuestaLaunchSim" Val="0"/>
     <Option Name="WTIesLaunchSim" Val="0"/>
@@ -92,7 +92,7 @@
       <Filter Type="Srcs"/>
       <File Path="$PSRCDIR/sources_1/imports/peak_detector/common_pack.vhd">
         <FileInfo>
-          <Attr Name="ImportPath" Val="$PPRDIR/../../Assignment 2/peak_detector/common_pack.vhd"/>
+          <Attr Name="ImportPath" Val="$PPRDIR/../../OneDrive - University of Bristol/Documents/CSE/Digital Design/Assignment 2/peak_detector/common_pack.vhd"/>
           <Attr Name="ImportTime" Val="1707732496"/>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
@@ -106,7 +106,7 @@
       </File>
       <File Path="$PSRCDIR/sources_1/imports/peak_detector/dataGen.vhd">
         <FileInfo>
-          <Attr Name="ImportPath" Val="$PPRDIR/../../Assignment 2/peak_detector/dataGen.vhd"/>
+          <Attr Name="ImportPath" Val="$PPRDIR/../../OneDrive - University of Bristol/Documents/CSE/Digital Design/Assignment 2/peak_detector/dataGen.vhd"/>
           <Attr Name="ImportTime" Val="1707732496"/>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
@@ -114,7 +114,7 @@
       </File>
       <File Path="$PSRCDIR/sources_1/imports/peak_detector/signed/tb_dataConsume_signed.vhd">
         <FileInfo>
-          <Attr Name="ImportPath" Val="$PPRDIR/../../Assignment 2/peak_detector/signed/tb_dataConsume_signed.vhd"/>
+          <Attr Name="ImportPath" Val="$PPRDIR/../../OneDrive - University of Bristol/Documents/CSE/Digital Design/Assignment 2/peak_detector/signed/tb_dataConsume_signed.vhd"/>
           <Attr Name="ImportTime" Val="1707732497"/>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
