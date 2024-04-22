@@ -71,7 +71,7 @@ function to_ascii(value : std_logic_vector) return std_logic_vector is
     signal nibble1, nibble2: std_logic_vector(3 downto 0);
     signal peakStore, listStore: std_logic_vector(7 downto 0);
     
-    signal ListCount, ANNN_byteCount,NNN,digitCount : integer :=0;
+    signal ListCount, ANNN_byteCount,NNN : integer :=0;
 
     signal enSend, enSent, peakStored, listStored, NNNStored, start_data_echo : boolean := false;
 
@@ -132,23 +132,49 @@ begin
 end process;
 
 SET_ANN_REG : process(clk)
+
 begin    
-    if rising_edge(clk) and topCurState = INIT then
+
+    if rising_edge(clk) then
+
+        if topCurState = INIT then
+
               ANNN_reg(0) <= "0000";
+
               ANNN_reg(1) <= "0000";
+
               ANNN_reg(2) <= "0000";
-    else
-              ANNN_reg(digitCount+1) <= data_reg(3 downto 0);
+
+        elsif topCurState = AN then
+
+            ANNN_reg(2) <= data_reg(3 downto 0);
+
+        elsif topCurState = ANN then
+
+            ANNN_reg(1) <= data_reg(3 downto 0);
+
+        elsif topCurState = ANNN then
+
+            ANNN_reg(0) <= data_reg(3 downto 0);
+
+        end if;
+
+    --else
+
     end if;
+
 end process;
 
 SET_NUMWORDS_REG : process(clk)
+
 begin    
+
     if rising_edge(clk) then
-          numwords_bcd(2) <= ANNN_reg(0);
-          numwords_bcd(1) <= ANNN_reg(1);
-          numwords_bcd(0) <= ANNN_reg(2);   
+
+          numwords_bcd <= ANNN_reg;
+
     end if;
+
 end process;
 
 reg_byte : process(clk)
@@ -366,32 +392,19 @@ begin
             start <= '0';
             txNow <='0';
             enSend <=false;
-            --numWords_bcd(0) <= "0000";
-           -- numWords_bcd(1) <= "0000";
-           -- numWords_bcd(2) <= "0000";
 
         when A => 
-          --ANNN_reg(0) <= data_reg(3 downto 0);
           
         when AN_WAIT => 
-          --ANNN_reg(1) <= data_reg(3 downto 0);
-          digitCount <= 0;
                         
           
         when ANN_WAIT => 
           --ANNN_reg(2) <= data_reg(3 downto 0);
-              digitCount <= 1;
-
                   
         when ANNN => --start proc
          NNN <= ( (TO_INTEGER(UNSIGNED(ANNN_reg(0)))*100) + (TO_INTEGER(UNSIGNED(ANNN_reg(1)))*10) + (TO_INTEGER(UNSIGNED(ANNN_reg(2)))));
           start <= '1'; 
-          --numwords_bcd(2) <= ANNN_reg(0);
-          --numwords_bcd(1) <= ANNN_reg(1);
-          --numwords_bcd(0) <= ANNN_reg(2);
           NNNStored <= true;
-         -- digitCount <= 2;
-
         
         when ANNN_BYTE_IN   =>           
           nibble1 <= byte_reg(3 downto 0); 
