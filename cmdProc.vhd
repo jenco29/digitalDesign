@@ -60,7 +60,7 @@ function to_ascii(value : std_logic_vector) return std_logic_vector is
  end function;
 
 -- State declaration for main FSM
-  TYPE state_type IS (INIT, DATA_ECHO, INIT_BYTE, A, A_WAIT, AN, AN_WAIT, ANN, ANN_WAIT, ANNN,ANNN_WAIT, ANNN_BYTE_IN, ANNN_BYTE_OUT1, ANNN_BYTE_OUT2, ANNN_DONE ,P, P_BYTE1, P_BYTE2, P_SPACE, P_INDEX1,P_INDEX2,P_INDEX3, LIST_INIT, LIST_PRINT1, LIST_PRINT2);  -- List your states here 	
+  TYPE state_type IS (INIT, DATA_ECHO, INIT_BYTE, A, A_WAIT, AN, AN_WAIT, ANN, ANN_WAIT, ANNN, ANNN_BYTE_IN, ANNN_BYTE_OUT1, ANNN_BYTE_OUT2, ANNN_DONE ,P, P_BYTE1, P_BYTE2, P_SPACE, P_INDEX1,P_INDEX2,P_INDEX3, LIST_INIT, LIST_PRINT1, LIST_PRINT2);  -- List your states here 	
   SIGNAL topCurState, topNextState: state_type;
     
     signal data_reg, byte_reg: std_logic_vector(7 downto 0);   -- data_reg: register to synchronously store byte from rx
@@ -142,18 +142,6 @@ begin
     end if;
 end process;
 
-SET_start : process(clk)
-begin   
-    if rising_edge(clk) and topCurState = ANNN then
-          --NNN <= ( (TO_INTEGER(UNSIGNED(ANNN_reg(0)))) + (TO_INTEGER(UNSIGNED(ANNN_reg(1)))*10) + (TO_INTEGER(UNSIGNED(ANNN_reg(2)))*100));
-          start <= '1'; 
-          --NNNStored <= true;
-          --digitCount <= 2;
-    ELSE
-              start <= '0'; 
-    END IF;
-end process;
-
 SET_NUMWORDS_REG : process(clk)
 begin    
     if rising_edge(clk) then
@@ -184,7 +172,6 @@ end process;
   
   combi_topNextState: PROCESS(topCurState, clk)
   BEGIN
-  
     CASE topCurState IS
       WHEN INIT =>
         IF rxnow_reg = '1' THEN 
@@ -250,7 +237,7 @@ end process;
         END IF;
                       
          WHEN ANNN =>
-        IF (data_reg(7 downto 4) = num_ascii) and (rxNow_reg='0') and ((TO_INTEGER(UNSIGNED(data_reg))) > 47) and ((TO_INTEGER(UNSIGNED(data_reg))) < 58) THEN 
+        IF NNNStored = true THEN 
             topNextState <= ANNN_BYTE_IN;
         ELSE
             topNextState <= ANNN;
@@ -373,13 +360,12 @@ end process;
   --processes on fsm states
 state_logic : process(topCurState, clk)
 begin
-    if rising_edge(clk) then    
-
     case topCurState is
         
         when INIT =>
-            --start <= '0';
+            start <= '0';
             txNow <='0';
+            enSend <=false;
             --numWords_bcd(0) <= "0000";
            -- numWords_bcd(1) <= "0000";
            -- numWords_bcd(2) <= "0000";
@@ -397,20 +383,21 @@ begin
               digitCount <= 1;
 
                   
-        when ANNN_WAIT => --start proc
-         -- NNN <= ( (TO_INTEGER(UNSIGNED(ANNN_reg(0)))) + (TO_INTEGER(UNSIGNED(ANNN_reg(1)))*10) + (TO_INTEGER(UNSIGNED(ANNN_reg(2)))*100));
-          --start <= '1'; 
+        when ANNN => --start proc
+         NNN <= ( (TO_INTEGER(UNSIGNED(ANNN_reg(0)))) + (TO_INTEGER(UNSIGNED(ANNN_reg(1)))*10) + (TO_INTEGER(UNSIGNED(ANNN_reg(2)))*100));
+          start <= '1'; 
           --numwords_bcd(2) <= ANNN_reg(0);
           --numwords_bcd(1) <= ANNN_reg(1);
           --numwords_bcd(0) <= ANNN_reg(2);
-         -- NNNStored <= true;
-          digitCount <= 2;
+          NNNStored <= true;
+         -- digitCount <= 2;
 
         
         when ANNN_BYTE_IN   =>           
           nibble1 <= byte(3 downto 0); 
           nibble2 <= byte(7 downto 4); 
-          
+                      enSend <=false;
+
           --int1 <= TO_INTEGER (UNSIGNED(nibble1));
           --int2 <= TO_INTEGER (UNSIGNED(nibble1));
 
@@ -480,7 +467,6 @@ begin
         when others =>
             -- do nothing
     end case;
-   end if;
 end process;
 
   ----------------output to tx--------------------------
@@ -489,7 +475,7 @@ txData_Out : process(clk)
 begin
     if rising_edge(clk) then
         if (rxnow_reg = '1')  then --ADD AND RXNOW='1' BACK IN PLSSSSSSSSSSSSSSSS
-               start_data_echo <= true;
+               --start_data_echo <= true;
                
         elsif enSend = true then 
             txNow <= '1';
@@ -498,28 +484,27 @@ begin
                   txNow <= '0';        
                   enSent <=false;  
         else
-                    start_data_echo <= false;
-
+                txData <= data_reg;
             end if;      
         end if;      
     end if;
 end process;
 
-data_echoing : process(clk)
-begin
-    if rising_edge(clk) then
+--data_echoing : process(clk)
+--begin
+    --if rising_edge(clk) then
 
-     if  start_data_echo = true then
+   --  if  start_data_echo = true then
             --rxdone <= '0';           
-            txNow <= '1';
-            txData <= data_reg;
-    end if;
-    if txDone = '1' then           
+     --       txNow <= '1';
+      --      txData <= data_reg;
+   -- end if;
+   -- if txDone = '1' then           
              --rxdone <= '1';
-             txNow <= '0';
-    end if;
-    end if;   
-end process;
+    --         txNow <= '0';
+   -- end if;
+  --  end if;   
+--end process;
   ---------------next state seq------------------------
   
 --progress to next state  
