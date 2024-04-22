@@ -77,29 +77,35 @@ end process;
 
 set_num_words : process(clk)
 begin
-    if rising_edge(clk) and en_num_words = true then
-        num_words_reg <= to_integer(signed(numwords_bcd(0))) + (to_integer(signed(numwords_bcd(1))) * 10) + (to_integer(signed(numwords_bcd(2))) * 100);
+    if rising_edge(clk) then
+        if en_num_words = true then
+            num_words_reg <= to_integer(signed(numwords_bcd(0))) + (to_integer(signed(numwords_bcd(1))) * 10) + (to_integer(signed(numwords_bcd(2))) * 100);
+        end if;
     end if;
 end process;
 
 data_results : process(clk)
 begin
-    if rising_edge(clk) and en_store = true then
-        data_results_reg(0) <= data_store(max_index -3);
-        data_results_reg(1) <= data_store(max_index -2);
-        data_results_reg(2) <= data_store(max_index -1);
-        data_results_reg(3) <= data_store(max_index );
-        data_results_reg(4) <= data_store(max_index +1);
-        data_results_reg(5) <= data_store(max_index +2);
-        data_results_reg(6) <= data_store(max_index +3);
+    if rising_edge(clk) then
+        if en_store = true then
+            data_results_reg(0) <= data_store(max_index -3);
+            data_results_reg(1) <= data_store(max_index -2);
+            data_results_reg(2) <= data_store(max_index -1);
+            data_results_reg(3) <= data_store(max_index );
+            data_results_reg(4) <= data_store(max_index +1);
+            data_results_reg(5) <= data_store(max_index +2);
+            data_results_reg(6) <= data_store(max_index +3);
+        end if;
     end if;
 end process;
 
 write_results : process(clk)
 begin
-    if rising_edge(clk) and en_send = true then
-        dataResults <= data_results_reg;
-        maxIndex <= max_ind_bcd;
+    if rising_edge(clk) then
+        if en_send = true then
+            dataResults <= data_results_reg;
+            maxIndex <= max_ind_bcd;
+        end if;
     end if;
 end process;
 
@@ -179,19 +185,10 @@ begin
     en_set_max <= false;
     
     case curState is
---       when wait_start =>
---            ctrlOut <= '0';
---            ctrl_out_reg <= '0'; 
         
         when set_num =>
             en_num_words <= true;
            
---        when prep_data =>
---            ctrl_out_reg <= not ctrl_out_reg;
-           
---        when req_data =>
---            ctrlOut <= ctrl_out_reg;
-        
         when read_data => 
             dataReady <= '1';
         
@@ -211,7 +208,7 @@ begin
 end process;
 
 --changing asm states
-next_state_comb : process(curState, clk)
+next_state_comb : process(curState, clk, start_reg, ctrlIn_detected, index, data_store, num_words_reg, max_index)
 begin
     case curState is 
         when wait_start =>
