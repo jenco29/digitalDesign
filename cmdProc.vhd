@@ -262,7 +262,7 @@ end process;
         WHEN ANNN_BYTE_OUT2 =>
         IF enSent = true THEN 
         
-            IF ANNN_byteCount < NNN-1 THEN
+            IF ANNN_byteCount < ((2*NNN)-1) THEN
                 topNextState <= ANNN_BYTE_OUT1;               
             ELSE
                 topNextState <= ANNN_DONE;
@@ -394,9 +394,9 @@ begin
 
         
         when ANNN_BYTE_IN   =>           
-          nibble1 <= byte(3 downto 0); 
-          nibble2 <= byte(7 downto 4); 
-                      enSend <=false;
+          nibble1 <= byte_reg(3 downto 0); 
+          nibble2 <= byte_reg(7 downto 4); 
+          enSend <=false;
 
           --int1 <= TO_INTEGER (UNSIGNED(nibble1));
           --int2 <= TO_INTEGER (UNSIGNED(nibble1));
@@ -483,28 +483,14 @@ begin
             if txDone_reg = '1' then   
                   txNow <= '0';        
                   enSent <=true;  
-        else
-                txData <= data_reg;
+               else
+                txData <= to_be_sent;
             end if;      
         end if;      
     end if;
 end process;
 
---data_echoing : process(clk)
---begin
-    --if rising_edge(clk) then
 
-   --  if  start_data_echo = true then
-            --rxdone <= '0';           
-     --       txNow <= '1';
-      --      txData <= data_reg;
-   -- end if;
-   -- if txDone = '1' then           
-             --rxdone <= '1';
-    --         txNow <= '0';
-   -- end if;
-  --  end if;   
---end process;
   ---------------next state seq------------------------
   
 --progress to next state  
