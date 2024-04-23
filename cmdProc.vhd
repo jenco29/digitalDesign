@@ -73,7 +73,7 @@ function to_ascii(value : std_logic_vector) return std_logic_vector is
     
     signal ListCount, ANNN_byteCount,NNN,digitCount : integer :=0;
 
-    signal enSend, enSent, peakStored, listStored, NNNStored : boolean := false;
+    signal enSend, enSent, peakStored, listStored, NNNStored, byte_sent, byte_done : boolean := false;
 
     signal rxnow_reg, txdone_reg, dataReady_reg, seqDone_reg  : std_logic;
     signal maxIndex_reg : BCD_ARRAY_TYPE(3 downto 0);
@@ -263,10 +263,10 @@ end process;
         
         WHEN ANNN_BYTE_OUT2 =>
         IF enSent = true THEN        
-            IF seqDone='0' THEN
-                topNextState <= ANNN_BYTE_IN;               
+            IF byte_done=true THEN
+                    topNextState <= ANNN_DONE;
             ELSE
-                topNextState <= ANNN_DONE;
+                   topNextState <= ANNN_BYTE_IN;               
             END IF;       
              
         ELSE
@@ -365,59 +365,41 @@ begin
         
         when INIT =>
             start <= '0';
-            to_be_sent <= data_reg;
-            --numWords_bcd(0) <= "0000";
-           -- numWords_bcd(1) <= "0000";
-           -- numWords_bcd(2) <= "0000";
+            byte_done<= false;
 
         when A => 
-          --ANNN_reg(0) <= data_reg(3 downto 0);
           
         when AN_WAIT => 
-          --ANNN_reg(1) <= data_reg(3 downto 0);
           digitCount <= 0;
                         
           
         when ANN_WAIT => 
-          --ANNN_reg(2) <= data_reg(3 downto 0);
               digitCount <= 1;
 
                   
         when ANNN => --start proc
          NNN <= ( (TO_INTEGER(UNSIGNED(ANNN_reg(0)))*100) + (TO_INTEGER(UNSIGNED(ANNN_reg(1)))*10) + (TO_INTEGER(UNSIGNED(ANNN_reg(2)))));
           start <= '1'; 
-          --numwords_bcd(2) <= ANNN_reg(0);
-          --numwords_bcd(1) <= ANNN_reg(1);
-          --numwords_bcd(0) <= ANNN_reg(2);
           NNNStored <= true;
-         -- digitCount <= 2;
-
         
         when ANNN_BYTE_IN   =>            
           enSend <=false;
-
-          --int1 <= TO_INTEGER (UNSIGNED(nibble1));
-          --int2 <= TO_INTEGER (UNSIGNED(nibble1));
-
+          byte_sent <= false;
 
         when ANNN_BYTE_OUT1  =>
           to_be_sent <= to_ascii(nibble1); 
           enSend <= true;
-
-          
+         
         when ANNN_BYTE_OUT2  =>
           to_be_sent <= to_ascii(nibble2); 
           enSend <= true;
-          --ANNN_byteCount <= ANNN_byteCount + 1;
-
+          byte_sent <= true;
           
         when ANNN_DONE => 
           start <= '0';    
-
+          byte_done<= true;
         when P =>
           peakStore <= dataResults(3); 
-          --int1 <= TO_INTEGER (UNSIGNED(peakStore(3 downto 0)));
-          --int2 <= TO_INTEGER (UNSIGNED(peakStore(7 downto 4)));
           peakStored <= true;
 
           when P_BYTE1 =>
@@ -448,8 +430,6 @@ begin
 
         when LIST_INIT =>
           listStore <= dataResults(listCount); 
-          --int1 <= TO_INTEGER (UNSIGNED(listStore(3 downto 0)));
-          --int2 <= TO_INTEGER (UNSIGNED(listStore(7 downto 4)));
           listStored <= true;
             
         when LIST_PRINT1 =>          
@@ -516,7 +496,6 @@ begin
     end if;
 end process;
 
-  ---------------next state seq------------------------
   
 --progress to next state  
 next_state_seq : process(clk, reset)
