@@ -22,7 +22,7 @@ entity dataConsume is
 end dataConsume;
 
 architecture asm of dataConsume is
-type state_type is (wait_start, set_num, check_index, prep_data, req_data, new_data, read_data, compare, new_max, end_data, set_results, set_digit1, set_digit2, set_digit3, send_results);
+type state_type is (wait_start, set_num, check_index, prep_data, req_data, new_data, read_data, compare, new_max, end_data, set_digit1, set_digit2, set_digit3, send_results, seq_done);
 signal curState, nextState: state_type;
 
 -- index: position of data point currently being compared
@@ -35,12 +35,11 @@ signal temp : integer;
 -- data_reg: register to synchronously store current data point
 signal data_reg: std_logic_vector(7 downto 0);
 -- #EXPLAIN
-signal en_num_words, en_set_max, en_store, en_send : boolean;
+signal en_num_words, en_send : boolean;
 -- ctrl_out_reg: stores current value of output to data generator, used for toggling
 -- ctrlIn_delayed, ctrlIn_detected: values used in logic for finding change in signal from data generator
 -- read_done: #EXPLAIN
--- dataReady_reg: #EXPLAIN
-signal ctrl_out_reg, ctrlIn_delayed, ctrlIn_detected, read_done, dataReady_reg, start_reg : std_logic;
+signal ctrl_out_reg, ctrlIn_delayed, ctrlIn_detected, read_done, start_reg : std_logic;
 -- data_results_reg: An array of data values storing the peak and surrounding bytes
 signal data_results_reg : CHAR_ARRAY_TYPE(0 to RESULT_BYTE_NUM-1);
 -- max_ind_bcd: A register locally storing the result of converting the index of the peak to a BCD value, which is then outputted
@@ -110,26 +109,17 @@ begin
     end if;
 end process;
 
-data_results : process(clk)
-begin
-    if rising_edge(clk) then
-        if en_store = true then
-            data_results_reg(0) <= data_store(max_index -3);
-            data_results_reg(1) <= data_store(max_index -2);
-            data_results_reg(2) <= data_store(max_index -1);
-            data_results_reg(3) <= data_store(max_index );
-            data_results_reg(4) <= data_store(max_index +1);
-            data_results_reg(5) <= data_store(max_index +2);
-            data_results_reg(6) <= data_store(max_index +3);
-        end if;
-    end if;
-end process;
-
 write_results : process(clk)
 begin
     if rising_edge(clk) then
         if en_send = true then
-            dataResults <= data_results_reg;
+            dataresults(0) <= data_store(max_index -3);
+            dataresults(1) <= data_store(max_index -2);
+            dataresults(2) <= data_store(max_index -1);
+            dataresults(3) <= data_store(max_index );
+            dataresults(4) <= data_store(max_index +1);
+            dataresults(5) <= data_store(max_index +2);
+            dataresults(6) <= data_store(max_index +3);
             maxIndex <= max_ind_bcd;
         end if;
     end if;
@@ -187,10 +177,8 @@ begin
     dataReady <= '0';
     seqDone <= '0';
     read_done <= '0';
-    en_store <= false;
     en_send <= false;
     en_num_words <= false;
-    en_set_max <= false;
     
     case curState is
         
@@ -202,13 +190,12 @@ begin
         
         when end_data =>
             read_done <= '1';
-            
-        when set_results =>
-            seqDone <= '1';
-            en_store <= true;
-                        
+                    
         when send_results =>
             en_send <= true;
+        
+        when seq_done =>
+            seqDone <= '1';
                
         when others =>
             -- do nothing
@@ -264,10 +251,8 @@ begin
             nextState <= prep_data;
         
         when end_data =>
-            nextState <= set_results;
-
-        when set_results =>
             nextState <= set_digit1;
+
             
         when set_digit1 =>
             nextState <= set_digit2;
@@ -279,7 +264,11 @@ begin
             nextState <= send_results;
             
         when send_results =>
+            nextState <= seq_done;
+            
+        when seq_done =>
             nextState <= wait_start;
+            
     end case;
 end process;         
 
