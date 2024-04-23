@@ -154,9 +154,9 @@ byteDone : process(clk)
 --storing data value inputted on the clock edge
 begin
     if rising_edge(clk)THEN
-    IF ANNN_byteCount>NNN then    
+        IF index>NNN-1 AND topCurState=ANNN_BYTE_OUT2_DONE then    
                    byte_done<=true;
-     ELSE
+        ELSE
                         byte_done<=false;
             end if;
             END IF;
@@ -336,13 +336,13 @@ end process;
         
         
             
-                            WHEN ANNN_BYTE_OUT2_DONE =>
+        WHEN ANNN_BYTE_OUT2_DONE =>
         IF byte_done=true THEN
                     topNextState <= ANNN_DONE;
         ELSIF enSent = true THEN
-                   topNextState <= ANNN_BYTE_IN;
-        ELSE
-                   topNextState <= ANNN_BYTE_OUT2;               
+                   topNextState <= ANNN_BYTE_IN;    
+        ELSE           
+                  topNextState <= ANNN_BYTE_OUT2_DONE;    
         END IF;  
         
         WHEN ANNN_DONE =>
