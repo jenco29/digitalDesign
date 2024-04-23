@@ -60,7 +60,7 @@ function to_ascii(value : std_logic_vector) return std_logic_vector is
  end function;
 
 -- State declaration for main FSM
-  TYPE state_type IS (INIT, DATA_ECHO, INIT_BYTE, A, A_WAIT, AN, AN_WAIT, ANN, ANN_WAIT, ANNN, ANNN_BYTE_IN, ANNN_DONE_CHECK, SEQ_DONE,ANNN_BYTE_COUNT, ANNN_BYTE_OUT1, ANNN_BYTE_OUT2, ANNN_DONE ,P, P_BYTE1, P_BYTE2, P_SPACE, P_INDEX1,P_INDEX2,P_INDEX3, LIST_INIT, LIST_PRINT1, LIST_PRINT2);  -- List your states here 	
+  TYPE state_type IS (INIT, DATA_ECHO, INIT_BYTE, A, A_WAIT, AN, AN_WAIT, ANN, ANN_WAIT, ANNN, ANNN_BYTE_IN,ANNN_BYTE_OUT1_DONE,ANNN_BYTE_OUT2_DONE, ANNN_DONE_CHECK, SEQ_DONE,ANNN_BYTE_COUNT, ANNN_BYTE_OUT1, ANNN_BYTE_OUT2, ANNN_DONE ,P, P_BYTE1, P_BYTE2, P_SPACE, P_INDEX1,P_INDEX2,P_INDEX3, LIST_INIT, LIST_PRINT1, LIST_PRINT2);  -- List your states here 	
   SIGNAL topCurState, topNextState: state_type;
     
     signal data_reg, byte_reg: std_logic_vector(7 downto 0);   -- data_reg: register to synchronously store byte from rx
@@ -350,17 +350,31 @@ end process;
                       
         WHEN ANNN_BYTE_OUT1 =>
         IF enSent = true THEN 
+            topNextState <= ANNN_BYTE_OUT1_DONE;
+        ELSE
+           topNextState <= ANNN_BYTE_OUT1_DONE;
+        END IF;
+        
+                WHEN ANNN_BYTE_OUT1_DONE =>
+        IF enSent = true THEN 
             topNextState <= ANNN_BYTE_OUT2;
         ELSE
-           topNextState <= ANNN_BYTE_OUT1;
+           topNextState <= ANNN_BYTE_OUT1_DONE;
         END IF;
               
         WHEN ANNN_BYTE_OUT2 =>
         IF enSent = true THEN 
+            topNextState <= ANNN_BYTE_OUT2_DONE;
+        ELSE
+           topNextState <= ANNN_BYTE_OUT2_DONE;
+        END IF;        
+        
+                WHEN ANNN_BYTE_OUT2_DONE =>
+        IF enSent = true THEN 
             topNextState <= ANNN_DONE_CHECK;
         ELSE
-           topNextState <= ANNN_BYTE_OUT2;
-        END IF;        
+           topNextState <= ANNN_BYTE_OUT2_DONE;
+        END IF; 
                   
         
         WHEN ANNN_DONE_CHECK =>
@@ -478,7 +492,6 @@ begin
 
         when ANNN_BYTE_OUT1  =>
           to_be_sent <= to_ascii(nibble1); 
-
           enSend <= true;
          
         when ANNN_BYTE_OUT2  =>
@@ -547,8 +560,12 @@ begin
     if rising_edge(clk) then
         if rxnow_reg = '1'  then --ADD AND RXNOW='1' BACK IN PLSSSSSSSSSSSSSSSS              
             txNow <= '1';
-        elsif topCurState = ANNN_BYTE_OUT1 or topCurState = ANNN_BYTE_OUT2 then   
-             txNow <= '1';      
+        elsif topCurState = ANNN_BYTE_OUT1 and enSent=true then
+            txNow <= '1';                  
+        elsif topCurState = ANNN_BYTE_OUT2 and enSent=true then 
+             txNow <= '1';  
+        elsif topCurState = ANNN_BYTE_COUNT and enSent=true then 
+             txNow <= '1';                  
        else 
           txNow <= '0';        
         end if;      
@@ -570,7 +587,7 @@ end process;
 txData_Out3 : process(clk)
 begin
     if rising_edge(clk) then
-            if topCurState = ANNN or topCurState = ANNN_BYTE_IN or topCurState = ANNN_BYTE_OUT1 or topCurState = ANNN_BYTE_OUT2 or topCurState = ANNN_BYTE_COUNT or topCurState = ANNN_DONE_CHECK then   
+            if topCurState = ANNN_BYTE_COUNT  or topCurState = ANNN_BYTE_OUT1_DONE or topCurState = ANNN_BYTE_OUT2_DONE then   
                   sending <=to_be_sent;  
             else
                   sending <=data_reg;  
