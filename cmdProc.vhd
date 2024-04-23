@@ -155,9 +155,11 @@ reg_byte : process(clk)
 --storing data value inputted on the clock edge
 begin
     if rising_edge(clk) then
-        if dataReady = '1' then
+        --if dataReady = '1' then
             byte_reg <= byte;
-        end if;
+        --end if;
+          nibble1 <= byte_reg(3 downto 0); 
+          nibble2 <= byte_reg(7 downto 4);
     end if;
 end process; 
 
@@ -245,7 +247,7 @@ end process;
         
                
         WHEN ANNN_BYTE_IN =>
-        IF dataReady = '1' THEN 
+        IF dataReady = '0' THEN 
             topNextState <= ANNN_BYTE_OUT1;
         ELSE
            topNextState <= ANNN_BYTE_IN;
@@ -262,7 +264,7 @@ end process;
         WHEN ANNN_BYTE_OUT2 =>
         IF enSent = true THEN 
         
-            IF ANNN_byteCount < ((2*NNN)-1) THEN
+            IF seqDone='0' THEN
                 topNextState <= ANNN_BYTE_IN;               
             ELSE
                 topNextState <= ANNN_DONE;
@@ -392,11 +394,7 @@ begin
          -- digitCount <= 2;
 
         
-        when ANNN_BYTE_IN   =>   
-                  start <= '0'; 
-        
-          nibble1 <= byte_reg(3 downto 0); 
-          nibble2 <= byte_reg(7 downto 4); 
+        when ANNN_BYTE_IN   =>            
           enSend <=false;
 
           --int1 <= TO_INTEGER (UNSIGNED(nibble1));
@@ -478,7 +476,9 @@ begin
         if rxnow_reg = '1'  then --ADD AND RXNOW='1' BACK IN PLSSSSSSSSSSSSSSSS              
             txNow <= '1';
         elsif enSend = true then   
-             txNow <= '1';        
+             txNow <= '1';    
+                elsif enSend = true then   
+    
        else 
           txNow <= '0';        
         end if;      
