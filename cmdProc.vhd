@@ -127,12 +127,13 @@ set_start : process(clk)
 --storing data value inputted on the clock edge
 begin
     if rising_edge(clk) then 
-        if ANNN_byteCount > NNN-2 THEN
-         start<='0'; 
-        elsif topCurState = ANNN THEN
-          start<='1'; 
-        else
-                  start<='0'; 
+        if topCurState=ANNN THEN
+         start<='1'; 
+        elsif index > NNN then
+           start<='0'; 
+        else 
+          start<='0'; 
+
         end if;
     end if;
 end process; 
