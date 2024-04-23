@@ -71,13 +71,15 @@ function to_ascii(value : std_logic_vector) return std_logic_vector is
     signal nibble1, nibble2: std_logic_vector(3 downto 0);
     signal peakStore, listStore: std_logic_vector(7 downto 0);
     
-    signal ListCount, ANNN_byteCount,NNN,digitCount : integer :=0;
+    signal ListCount, ANNN_byteCount,NNN,digitCount,index : integer :=0;
 
     signal enSend, enSent, peakStored, listStored, NNNStored, byte_sent, byte_done : boolean := false;
 
     signal rxnow_reg, txdone_reg, dataReady_reg, seqDone_reg  : std_logic;
     signal maxIndex_reg : BCD_ARRAY_TYPE(3 downto 0);
     signal dataResults_reg : CHAR_ARRAY_TYPE(0 to RESULT_BYTE_NUM-1); -- N registers
+    -- byte store: register that stores full sequence of bytes from data processor
+signal byte_store : CHAR_ARRAY_TYPE(0 to SEQ_LENGTH + 5);
 
         -- constants of symbols in ASCII binary code
     constant lowerp : std_logic_vector (7 downto 0) := "01110000";
@@ -100,13 +102,38 @@ begin
     if rising_edge(clk) then    
             txdone_reg <= txdone;
     end if;
-end process;  
+end process; 
+
+-- process to store each incoming byte on the clock when data is to be read
+store_byte : process(clk)
+begin
+    if rising_edge(clk) then
+        if dataReady_reg='1' then
+            byte_store(index) <= byte_reg;
+            index<=index+1;
+        end if;
+    end if;
+end process; 
 
 reg_dataReady : process(clk)
 --storing data value inputted on the clock edge
 begin
     if rising_edge(clk) then    
             dataReady_reg <= dataReady;
+    end if;
+end process; 
+
+set_start : process(clk)
+--storing data value inputted on the clock edge
+begin
+    if rising_edge(clk) then 
+        if ANNN_byteCount > NNN-2 THEN
+         start<='0'; 
+        elsif topCurState = ANNN THEN
+          start<='1'; 
+        else
+                  start<='0'; 
+        end if;
     end if;
 end process; 
 
@@ -165,9 +192,9 @@ end process;
 SET_NUMWORDS_REG : process(clk)
 begin    
     if rising_edge(clk) then
-          numwords_bcd(2) <= ANNN_reg(0);
+          numwords_bcd(2) <= ANNN_reg(2);
           numwords_bcd(1) <= ANNN_reg(1);
-          numwords_bcd(0) <= ANNN_reg(2);   
+          numwords_bcd(0) <= ANNN_reg(0);   
     end if;
 end process;
 
@@ -289,14 +316,15 @@ end process;
         
         
         WHEN ANNN_BYTE_OUT2 =>
-            IF byte_done=true THEN
+
+        IF byte_done=true THEN
                     topNextState <= ANNN_DONE;
-            ELSE
+        ELSIF enSent = true THEN
+                   topNextState <= ANNN_BYTE_IN;
+        ELSE
                    topNextState <= ANNN_BYTE_OUT2;               
-            END IF;       
+        END IF;          
             
-            
-             
         
         WHEN ANNN_DONE =>
             IF seqDone='1' THEN
@@ -389,7 +417,7 @@ begin
     case topCurState is
         
         when INIT =>
-            start <= '0';
+            --start <= '0';
 
         when A => 
           
@@ -403,7 +431,7 @@ begin
                   
         when ANNN => --start proc
          NNN <= ( (TO_INTEGER(UNSIGNED(ANNN_reg(0)))*100) + (TO_INTEGER(UNSIGNED(ANNN_reg(1)))*10) + (TO_INTEGER(UNSIGNED(ANNN_reg(2)))));
-          start <= '1'; 
+         -- start <= '1'; 
           NNNStored <= true;
         
         when ANNN_BYTE_IN   =>            
@@ -420,7 +448,7 @@ begin
           byte_sent <= true;
           
         when ANNN_DONE => 
-          start <= '0';    
+          --start <= '0';    
         when P =>
           peakStore <= dataResults(3); 
           peakStored <= true;
@@ -484,15 +512,6 @@ begin
        else 
           txNow <= '0';        
         end if;      
-    end if;
-end process;
-
-txData_byte_count : process(clk)
-begin
-    if rising_edge(clk) then
-            if dataReady_reg = '1' then    
-                  ANNN_byteCount <= ANNN_byteCount + 1;
-            end if;
     end if;
 end process;
 
