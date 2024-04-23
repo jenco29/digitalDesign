@@ -4,7 +4,7 @@
 
 set TIME_start [clock seconds] 
 namespace eval ::optrace {
-  variable script "C:/Users/jenni/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/synth_data/synth_data.runs/synth_1/top.tcl"
+  variable script "C:/Users/archi/Documents/GitHub/digitalDesign/synth_data/synth_data.runs/synth_1/top.tcl"
   variable category "vivado_synth"
 }
 
@@ -77,29 +77,29 @@ set_param project.singleFileAddWarning.threshold 0
 set_param project.compositeFile.enableAutoGeneration 0
 set_param synth.vivado.isSynthRun true
 set_msg_config -source 4 -id {IP_Flow 19-2162} -severity warning -new_severity info
-set_property webtalk.parent_dir {C:/Users/jenni/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/synth_data/synth_data.cache/wt} [current_project]
-set_property parent.project_path {C:/Users/jenni/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/synth_data/synth_data.xpr} [current_project]
+set_property webtalk.parent_dir C:/Users/archi/Documents/GitHub/digitalDesign/synth_data/synth_data.cache/wt [current_project]
+set_property parent.project_path C:/Users/archi/Documents/GitHub/digitalDesign/synth_data/synth_data.xpr [current_project]
 set_property XPM_LIBRARIES XPM_CDC [current_project]
 set_property default_lib xil_defaultlib [current_project]
 set_property target_language Verilog [current_project]
-set_property ip_output_repo {c:/Users/jenni/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/synth_data/synth_data.cache/ip} [current_project]
+set_property ip_output_repo c:/Users/archi/Documents/GitHub/digitalDesign/synth_data/synth_data.cache/ip [current_project]
 set_property ip_cache_permissions {read write} [current_project]
 OPTRACE "Creating in-memory project" END { }
 OPTRACE "Adding files" START { }
 read_vhdl -library xil_defaultlib {
-  {C:/Users/jenni/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/synth_data/synth_data.srcs/sources_1/imports/groupProject/fullSim/fullSim.srcs/sources_1/imports/peak_detector/UART_RX_CTRL.vhd}
-  {C:/Users/jenni/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/synth_data/synth_data.srcs/sources_1/imports/groupProject/fullSim/fullSim.srcs/sources_1/imports/peak_detector/UART_TX_CTRL.vhd}
-  {C:/Users/jenni/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/synth_data/synth_data.srcs/sources_1/imports/groupProject/fullSim/fullSim.srcs/sources_1/imports/peak_detector/common_pack.vhd}
-  {C:/Users/jenni/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/synth_data/synth_data.srcs/sources_1/imports/groupProject/dataProcSim/dataProcSim.srcs/sources_1/new/dataConsume.vhd}
-  {C:/Users/jenni/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/synth_data/synth_data.srcs/sources_1/imports/groupProject/fullSim/fullSim.srcs/sources_1/imports/peak_detector/dataGen.vhd}
-  {C:/Users/jenni/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/synth_data/synth_data.srcs/sources_1/imports/groupProject/fullSim/fullSim.srcs/sources_1/imports/peak_detector/top.vhd}
+  {C:/Users/archi/OneDrive - University of Bristol/Vivado_Projects/Assignment 2/peak_detector/UART_RX_CTRL.vhd}
+  {C:/Users/archi/OneDrive - University of Bristol/Vivado_Projects/Assignment 2/peak_detector/UART_TX_CTRL.vhd}
+  {C:/Users/archi/OneDrive - University of Bristol/Vivado_Projects/Assignment 2/peak_detector/common_pack.vhd}
+  C:/Users/archi/Documents/GitHub/digitalDesign/dataProcSim/dataProcSim.srcs/sources_1/new/dataConsume.vhd
+  {C:/Users/archi/OneDrive - University of Bristol/Vivado_Projects/Assignment 2/peak_detector/dataGen.vhd}
+  {C:/Users/archi/OneDrive - University of Bristol/Vivado_Projects/Assignment 2/peak_detector/top.vhd}
 }
-read_ip -quiet {{C:/Users/jenni/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/synth_data/synth_data.srcs/sources_1/ip/clk_wiz_0/clk_wiz_0.xci}}
-set_property used_in_implementation false [get_files -all {{c:/Users/jenni/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/synth_data/synth_data.gen/sources_1/ip/clk_wiz_0/clk_wiz_0_board.xdc}}]
-set_property used_in_implementation false [get_files -all {{c:/Users/jenni/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/synth_data/synth_data.gen/sources_1/ip/clk_wiz_0/clk_wiz_0.xdc}}]
-set_property used_in_implementation false [get_files -all {{c:/Users/jenni/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/synth_data/synth_data.gen/sources_1/ip/clk_wiz_0/clk_wiz_0_ooc.xdc}}]
+read_ip -quiet c:/Users/archi/Documents/GitHub/digitalDesign/synth_data/synth_data.srcs/sources_1/ip/clk_wiz_0/clk_wiz_0.xci
+set_property used_in_implementation false [get_files -all c:/Users/archi/Documents/GitHub/digitalDesign/synth_data/synth_data.gen/sources_1/ip/clk_wiz_0/clk_wiz_0_board.xdc]
+set_property used_in_implementation false [get_files -all c:/Users/archi/Documents/GitHub/digitalDesign/synth_data/synth_data.gen/sources_1/ip/clk_wiz_0/clk_wiz_0.xdc]
+set_property used_in_implementation false [get_files -all c:/Users/archi/Documents/GitHub/digitalDesign/synth_data/synth_data.gen/sources_1/ip/clk_wiz_0/clk_wiz_0_ooc.xdc]
 
-read_edif {{C:/Users/jenni/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/synth_data/synth_data.srcs/sources_1/imports/groupProject/fullSim/fullSim.srcs/sources_1/imports/peak_detector/cmdProc.edn}}
+read_edif {{C:/Users/archi/OneDrive - University of Bristol/Vivado_Projects/Assignment 2/peak_detector/cmdProc.edn}}
 OPTRACE "Adding files" END { }
 # Mark all dcp files as not used in implementation to prevent them from being
 # stitched into the results of this synthesis run. Any black boxes in the
@@ -109,12 +109,10 @@ OPTRACE "Adding files" END { }
 foreach dcp [get_files -quiet -all -filter file_type=="Design\ Checkpoint"] {
   set_property used_in_implementation false $dcp
 }
-read_xdc {{C:/Users/jenni/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/synth_data/synth_data.srcs/constrs_1/imports/uart_demo/Cmod-A7-Master.xdc}}
-set_property used_in_implementation false [get_files {{C:/Users/jenni/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/synth_data/synth_data.srcs/constrs_1/imports/uart_demo/Cmod-A7-Master.xdc}}]
+read_xdc {{C:/Users/archi/OneDrive - University of Bristol/Vivado_Projects/Assignment 2/uart_demo/Cmod-A7-Master.xdc}}
+set_property used_in_implementation false [get_files {{C:/Users/archi/OneDrive - University of Bristol/Vivado_Projects/Assignment 2/uart_demo/Cmod-A7-Master.xdc}}]
 
 set_param ips.enableIPCacheLiteLoad 1
-
-read_checkpoint -auto_incremental -incremental {C:/Users/jenni/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/synth_data/synth_data.srcs/utils_1/imports/synth_1/top.dcp}
 close [open __synthesis_is_running__ w]
 
 OPTRACE "synth_design" START { }

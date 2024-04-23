@@ -1,0 +1,7 @@
++====================+===================+===========================================+
+| Launch Setup Clock | Launch Hold Clock | Pin                                       |
++====================+===================+===========================================+
+| clk_out_clk_wiz_0  | clk_out_clk_wiz_0 | dataConsume1/curState_reg[1]/D            |
+| clk_out_clk_wiz_0  | clk_out_clk_wiz_0 | dataConsume1/curState_reg[0]/D            |
+| clk_out_clk_wiz_0  | clk_out_clk_wiz_0 | dataConsume1/data_results_reg_reg[1][2]/D |
++--------------------+-------------------+-------------------------------------------+

@@ -1,14 +1,14 @@
 #-----------------------------------------------------------
-# Vivado v2023.2 (64-bit)
-# SW Build 4029153 on Fri Oct 13 20:14:34 MDT 2023
-# IP Build 4028589 on Sat Oct 14 00:45:43 MDT 2023
-# SharedData Build 4025554 on Tue Oct 10 17:18:54 MDT 2023
-# Start of session at: Thu Apr 18 15:42:08 2024
-# Process ID: 12120
-# Current directory: C:/Users/jenni/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/synth_data/synth_data.runs/clk_wiz_0_synth_1
+# Vivado v2023.2.2 (64-bit)
+# SW Build 4126759 on Thu Feb  8 23:53:51 MST 2024
+# IP Build 4126054 on Fri Feb  9 11:39:09 MST 2024
+# SharedData Build 4115275 on Tue Jan 30 00:40:57 MST 2024
+# Start of session at: Tue Apr 23 16:17:58 2024
+# Process ID: 19560
+# Current directory: C:/Users/archi/Documents/GitHub/digitalDesign/synth_data/synth_data.runs/clk_wiz_0_synth_1
 # Command line: vivado.exe -log clk_wiz_0.vds -product Vivado -mode batch -messageDb vivado.pb -notrace -source clk_wiz_0.tcl
-# Log file: C:/Users/jenni/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/synth_data/synth_data.runs/clk_wiz_0_synth_1/clk_wiz_0.vds
-# Journal file: C:/Users/jenni/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/synth_data/synth_data.runs/clk_wiz_0_synth_1\vivado.jou
-# Running On: jennie, OS: Windows, CPU Frequency: 1992 MHz, CPU Physical cores: 4, Host memory: 8463 MB
+# Log file: C:/Users/archi/Documents/GitHub/digitalDesign/synth_data/synth_data.runs/clk_wiz_0_synth_1/clk_wiz_0.vds
+# Journal file: C:/Users/archi/Documents/GitHub/digitalDesign/synth_data/synth_data.runs/clk_wiz_0_synth_1\vivado.jou
+# Running On: DESKTOP-V44UH9Q, OS: Windows, CPU Frequency: 3700 MHz, CPU Physical cores: 12, Host memory: 17102 MB
 #-----------------------------------------------------------
 source clk_wiz_0.tcl -notrace

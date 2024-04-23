@@ -1,104 +1,96 @@
 #-----------------------------------------------------------
-# Vivado v2023.2 (64-bit)
-# SW Build 4029153 on Fri Oct 13 20:14:34 MDT 2023
-# IP Build 4028589 on Sat Oct 14 00:45:43 MDT 2023
-# SharedData Build 4025554 on Tue Oct 10 17:18:54 MDT 2023
-# Start of session at: Mon Apr 22 14:25:09 2024
-# Process ID: 11992
-# Current directory: C:/Users/jenni/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/synth_data/synth_data.runs/synth_1
+# Vivado v2023.2.2 (64-bit)
+# SW Build 4126759 on Thu Feb  8 23:53:51 MST 2024
+# IP Build 4126054 on Fri Feb  9 11:39:09 MST 2024
+# SharedData Build 4115275 on Tue Jan 30 00:40:57 MST 2024
+# Start of session at: Tue Apr 23 16:18:32 2024
+# Process ID: 13820
+# Current directory: C:/Users/archi/Documents/GitHub/digitalDesign/synth_data/synth_data.runs/synth_1
 # Command line: vivado.exe -log top.vds -product Vivado -mode batch -messageDb vivado.pb -notrace -source top.tcl
-# Log file: C:/Users/jenni/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/synth_data/synth_data.runs/synth_1/top.vds
-# Journal file: C:/Users/jenni/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/synth_data/synth_data.runs/synth_1\vivado.jou
-# Running On: jennie, OS: Windows, CPU Frequency: 1992 MHz, CPU Physical cores: 4, Host memory: 8463 MB
+# Log file: C:/Users/archi/Documents/GitHub/digitalDesign/synth_data/synth_data.runs/synth_1/top.vds
+# Journal file: C:/Users/archi/Documents/GitHub/digitalDesign/synth_data/synth_data.runs/synth_1\vivado.jou
+# Running On: DESKTOP-V44UH9Q, OS: Windows, CPU Frequency: 3700 MHz, CPU Physical cores: 12, Host memory: 17102 MB
 #-----------------------------------------------------------
 source top.tcl -notrace
-create_project: Time (s): cpu = 00:00:10 ; elapsed = 00:00:21 . Memory (MB): peak = 472.996 ; gain = 179.559
-Command: read_checkpoint -auto_incremental -incremental {C:/Users/jenni/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/synth_data/synth_data.srcs/utils_1/imports/synth_1/top.dcp}
-INFO: [Vivado 12-5825] Read reference checkpoint from C:/Users/jenni/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/synth_data/synth_data.srcs/utils_1/imports/synth_1/top.dcp for incremental synthesis
-INFO: [Vivado 12-7989] Please ensure there are no constraint changes
 Command: synth_design -top top -part xc7a35tcpg236-1
 Starting synth_design
 Attempting to get a license for feature 'Synthesis' and/or device 'xc7a35t'
 INFO: [Common 17-349] Got license for feature 'Synthesis' and/or device 'xc7a35t'
 INFO: [Device 21-403] Loading part xc7a35tcpg236-1
-INFO: [Designutils 20-5440] No compile time benefit to using incremental synthesis; A full resynthesis will be run
-INFO: [Designutils 20-4379] Flow is switching to default flow due to incremental criteria not met. If you would like to alter this behaviour and have the flow terminate instead, please set the following parameter config_implementation {autoIncr.Synth.RejectBehavior Terminate}
 INFO: [Synth 8-7079] Multithreading enabled for synth_design using a maximum of 2 processes.
 INFO: [Synth 8-7078] Launching helper process for spawning children vivado processes
-INFO: [Synth 8-7075] Helper process launched with PID 7976
+INFO: [Synth 8-7075] Helper process launched with PID 17720
 ---------------------------------------------------------------------------------
-Starting RTL Elaboration : Time (s): cpu = 00:00:12 ; elapsed = 00:00:15 . Memory (MB): peak = 1319.586 ; gain = 441.562
+Starting RTL Elaboration : Time (s): cpu = 00:00:04 ; elapsed = 00:00:04 . Memory (MB): peak = 1322.047 ; gain = 439.695
 ---------------------------------------------------------------------------------
-INFO: [Synth 8-638] synthesizing module 'top' [C:/Users/jenni/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/synth_data/synth_data.srcs/sources_1/imports/groupProject/fullSim/fullSim.srcs/sources_1/imports/peak_detector/top.vhd:15]
-INFO: [Synth 8-3491] module 'clk_wiz_0' declared at 'C:/Users/jenni/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/synth_data/synth_data.runs/synth_1/.Xil/Vivado-11992-jennie/realtime/clk_wiz_0_stub.v:6' bound to instance 'clk_wiz' of component 'clk_wiz_0' [C:/Users/jenni/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/synth_data/synth_data.srcs/sources_1/imports/groupProject/fullSim/fullSim.srcs/sources_1/imports/peak_detector/top.vhd:108]
-INFO: [Synth 8-6157] synthesizing module 'clk_wiz_0' [C:/Users/jenni/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/synth_data/synth_data.runs/synth_1/.Xil/Vivado-11992-jennie/realtime/clk_wiz_0_stub.v:6]
-INFO: [Synth 8-6155] done synthesizing module 'clk_wiz_0' (0#1) [C:/Users/jenni/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/synth_data/synth_data.runs/synth_1/.Xil/Vivado-11992-jennie/realtime/clk_wiz_0_stub.v:6]
-INFO: [Synth 8-3491] module 'dataGen' declared at 'C:/Users/jenni/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/synth_data/synth_data.srcs/sources_1/imports/groupProject/fullSim/fullSim.srcs/sources_1/imports/peak_detector/dataGen.vhd:5' bound to instance 'dataGen1' of component 'dataGen' [C:/Users/jenni/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/synth_data/synth_data.srcs/sources_1/imports/groupProject/fullSim/fullSim.srcs/sources_1/imports/peak_detector/top.vhd:115]
-INFO: [Synth 8-638] synthesizing module 'dataGen' [C:/Users/jenni/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/synth_data/synth_data.srcs/sources_1/imports/groupProject/fullSim/fullSim.srcs/sources_1/imports/peak_detector/dataGen.vhd:15]
-INFO: [Synth 8-256] done synthesizing module 'dataGen' (0#1) [C:/Users/jenni/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/synth_data/synth_data.srcs/sources_1/imports/groupProject/fullSim/fullSim.srcs/sources_1/imports/peak_detector/dataGen.vhd:15]
-INFO: [Synth 8-3491] module 'dataConsume' declared at 'C:/Users/jenni/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/synth_data/synth_data.srcs/sources_1/imports/groupProject/dataProcSim/dataProcSim.srcs/sources_1/new/dataConsume.vhd:7' bound to instance 'dataConsume1' of component 'dataConsume' [C:/Users/jenni/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/synth_data/synth_data.srcs/sources_1/imports/groupProject/fullSim/fullSim.srcs/sources_1/imports/peak_detector/top.vhd:124]
-INFO: [Synth 8-638] synthesizing module 'dataConsume' [C:/Users/jenni/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/synth_data/synth_data.srcs/sources_1/imports/groupProject/dataProcSim/dataProcSim.srcs/sources_1/new/dataConsume.vhd:24]
-INFO: [Synth 8-256] done synthesizing module 'dataConsume' (0#1) [C:/Users/jenni/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/synth_data/synth_data.srcs/sources_1/imports/groupProject/dataProcSim/dataProcSim.srcs/sources_1/new/dataConsume.vhd:24]
-INFO: [Synth 8-637] synthesizing blackbox instance 'cmdProc1' of component 'cmdProc' [C:/Users/jenni/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/synth_data/synth_data.srcs/sources_1/imports/groupProject/fullSim/fullSim.srcs/sources_1/imports/peak_detector/top.vhd:140]
-INFO: [Synth 8-3491] module 'UART_TX_CTRL' declared at 'C:/Users/jenni/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/synth_data/synth_data.srcs/sources_1/imports/groupProject/fullSim/fullSim.srcs/sources_1/imports/peak_detector/UART_TX_CTRL.vhd:42' bound to instance 'tx' of component 'UART_TX_CTRL' [C:/Users/jenni/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/synth_data/synth_data.srcs/sources_1/imports/groupProject/fullSim/fullSim.srcs/sources_1/imports/peak_detector/top.vhd:161]
-INFO: [Synth 8-638] synthesizing module 'UART_TX_CTRL' [C:/Users/jenni/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/synth_data/synth_data.srcs/sources_1/imports/groupProject/fullSim/fullSim.srcs/sources_1/imports/peak_detector/UART_TX_CTRL.vhd:50]
-INFO: [Synth 8-256] done synthesizing module 'UART_TX_CTRL' (0#1) [C:/Users/jenni/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/synth_data/synth_data.srcs/sources_1/imports/groupProject/fullSim/fullSim.srcs/sources_1/imports/peak_detector/UART_TX_CTRL.vhd:50]
-INFO: [Synth 8-3491] module 'UART_RX_CTRL' declared at 'C:/Users/jenni/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/synth_data/synth_data.srcs/sources_1/imports/groupProject/fullSim/fullSim.srcs/sources_1/imports/peak_detector/UART_RX_CTRL.vhd:70' bound to instance 'rx' of component 'UART_RX_CTRL' [C:/Users/jenni/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/synth_data/synth_data.srcs/sources_1/imports/groupProject/fullSim/fullSim.srcs/sources_1/imports/peak_detector/top.vhd:170]
-INFO: [Synth 8-638] synthesizing module 'UART_RX_CTRL' [C:/Users/jenni/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/synth_data/synth_data.srcs/sources_1/imports/groupProject/fullSim/fullSim.srcs/sources_1/imports/peak_detector/UART_RX_CTRL.vhd:84]
-INFO: [Synth 8-256] done synthesizing module 'UART_RX_CTRL' (0#1) [C:/Users/jenni/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/synth_data/synth_data.srcs/sources_1/imports/groupProject/fullSim/fullSim.srcs/sources_1/imports/peak_detector/UART_RX_CTRL.vhd:84]
-INFO: [Synth 8-256] done synthesizing module 'top' (0#1) [C:/Users/jenni/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/synth_data/synth_data.srcs/sources_1/imports/groupProject/fullSim/fullSim.srcs/sources_1/imports/peak_detector/top.vhd:15]
+INFO: [Synth 8-638] synthesizing module 'top' [C:/Users/archi/OneDrive - University of Bristol/Vivado_Projects/Assignment 2/peak_detector/top.vhd:15]
+INFO: [Synth 8-3491] module 'clk_wiz_0' declared at 'C:/Users/archi/Documents/GitHub/digitalDesign/synth_data/synth_data.runs/synth_1/.Xil/Vivado-13820-DESKTOP-V44UH9Q/realtime/clk_wiz_0_stub.v:6' bound to instance 'clk_wiz' of component 'clk_wiz_0' [C:/Users/archi/OneDrive - University of Bristol/Vivado_Projects/Assignment 2/peak_detector/top.vhd:108]
+INFO: [Synth 8-6157] synthesizing module 'clk_wiz_0' [C:/Users/archi/Documents/GitHub/digitalDesign/synth_data/synth_data.runs/synth_1/.Xil/Vivado-13820-DESKTOP-V44UH9Q/realtime/clk_wiz_0_stub.v:6]
+INFO: [Synth 8-6155] done synthesizing module 'clk_wiz_0' (0#1) [C:/Users/archi/Documents/GitHub/digitalDesign/synth_data/synth_data.runs/synth_1/.Xil/Vivado-13820-DESKTOP-V44UH9Q/realtime/clk_wiz_0_stub.v:6]
+INFO: [Synth 8-3491] module 'dataGen' declared at 'C:/Users/archi/OneDrive - University of Bristol/Vivado_Projects/Assignment 2/peak_detector/dataGen.vhd:5' bound to instance 'dataGen1' of component 'dataGen' [C:/Users/archi/OneDrive - University of Bristol/Vivado_Projects/Assignment 2/peak_detector/top.vhd:115]
+INFO: [Synth 8-638] synthesizing module 'dataGen' [C:/Users/archi/OneDrive - University of Bristol/Vivado_Projects/Assignment 2/peak_detector/dataGen.vhd:15]
+INFO: [Synth 8-256] done synthesizing module 'dataGen' (0#1) [C:/Users/archi/OneDrive - University of Bristol/Vivado_Projects/Assignment 2/peak_detector/dataGen.vhd:15]
+INFO: [Synth 8-3491] module 'dataConsume' declared at 'C:/Users/archi/Documents/GitHub/digitalDesign/dataProcSim/dataProcSim.srcs/sources_1/new/dataConsume.vhd:7' bound to instance 'dataConsume1' of component 'dataConsume' [C:/Users/archi/OneDrive - University of Bristol/Vivado_Projects/Assignment 2/peak_detector/top.vhd:124]
+INFO: [Synth 8-638] synthesizing module 'dataConsume' [C:/Users/archi/Documents/GitHub/digitalDesign/dataProcSim/dataProcSim.srcs/sources_1/new/dataConsume.vhd:24]
+INFO: [Synth 8-256] done synthesizing module 'dataConsume' (0#1) [C:/Users/archi/Documents/GitHub/digitalDesign/dataProcSim/dataProcSim.srcs/sources_1/new/dataConsume.vhd:24]
+INFO: [Synth 8-637] synthesizing blackbox instance 'cmdProc1' of component 'cmdProc' [C:/Users/archi/OneDrive - University of Bristol/Vivado_Projects/Assignment 2/peak_detector/top.vhd:140]
+INFO: [Synth 8-3491] module 'UART_TX_CTRL' declared at 'C:/Users/archi/OneDrive - University of Bristol/Vivado_Projects/Assignment 2/peak_detector/UART_TX_CTRL.vhd:42' bound to instance 'tx' of component 'UART_TX_CTRL' [C:/Users/archi/OneDrive - University of Bristol/Vivado_Projects/Assignment 2/peak_detector/top.vhd:161]
+INFO: [Synth 8-638] synthesizing module 'UART_TX_CTRL' [C:/Users/archi/OneDrive - University of Bristol/Vivado_Projects/Assignment 2/peak_detector/UART_TX_CTRL.vhd:50]
+INFO: [Synth 8-256] done synthesizing module 'UART_TX_CTRL' (0#1) [C:/Users/archi/OneDrive - University of Bristol/Vivado_Projects/Assignment 2/peak_detector/UART_TX_CTRL.vhd:50]
+INFO: [Synth 8-3491] module 'UART_RX_CTRL' declared at 'C:/Users/archi/OneDrive - University of Bristol/Vivado_Projects/Assignment 2/peak_detector/UART_RX_CTRL.vhd:70' bound to instance 'rx' of component 'UART_RX_CTRL' [C:/Users/archi/OneDrive - University of Bristol/Vivado_Projects/Assignment 2/peak_detector/top.vhd:170]
+INFO: [Synth 8-638] synthesizing module 'UART_RX_CTRL' [C:/Users/archi/OneDrive - University of Bristol/Vivado_Projects/Assignment 2/peak_detector/UART_RX_CTRL.vhd:84]
+INFO: [Synth 8-256] done synthesizing module 'UART_RX_CTRL' (0#1) [C:/Users/archi/OneDrive - University of Bristol/Vivado_Projects/Assignment 2/peak_detector/UART_RX_CTRL.vhd:84]
+INFO: [Synth 8-256] done synthesizing module 'top' (0#1) [C:/Users/archi/OneDrive - University of Bristol/Vivado_Projects/Assignment 2/peak_detector/top.vhd:15]
 ---------------------------------------------------------------------------------
-Finished RTL Elaboration : Time (s): cpu = 00:00:22 ; elapsed = 00:00:29 . Memory (MB): peak = 1665.969 ; gain = 787.945
+Finished RTL Elaboration : Time (s): cpu = 00:00:07 ; elapsed = 00:00:07 . Memory (MB): peak = 1669.844 ; gain = 787.492
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
 Start Handling Custom Attributes
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
-Finished Handling Custom Attributes : Time (s): cpu = 00:00:23 ; elapsed = 00:00:30 . Memory (MB): peak = 1665.969 ; gain = 787.945
+Finished Handling Custom Attributes : Time (s): cpu = 00:00:07 ; elapsed = 00:00:08 . Memory (MB): peak = 1669.844 ; gain = 787.492
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
-Finished RTL Optimization Phase 1 : Time (s): cpu = 00:00:23 ; elapsed = 00:00:30 . Memory (MB): peak = 1665.969 ; gain = 787.945
+Finished RTL Optimization Phase 1 : Time (s): cpu = 00:00:07 ; elapsed = 00:00:08 . Memory (MB): peak = 1669.844 ; gain = 787.492
 ---------------------------------------------------------------------------------
-Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.212 . Memory (MB): peak = 1665.969 ; gain = 0.000
+Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.077 . Memory (MB): peak = 1669.844 ; gain = 0.000
 INFO: [Project 1-570] Preparing netlist for logic optimization
 
 Processing XDC Constraints
 Initializing timing engine
-Parsing XDC File [c:/Users/jenni/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/synth_data/synth_data.gen/sources_1/ip/clk_wiz_0/clk_wiz_0/clk_wiz_0_in_context.xdc] for cell 'clk_wiz'
-Finished Parsing XDC File [c:/Users/jenni/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/synth_data/synth_data.gen/sources_1/ip/clk_wiz_0/clk_wiz_0/clk_wiz_0_in_context.xdc] for cell 'clk_wiz'
-Parsing XDC File [C:/Users/jenni/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/synth_data/synth_data.srcs/constrs_1/imports/uart_demo/Cmod-A7-Master.xdc]
-WARNING: [Vivado 12-584] No ports matched 'clear'. [C:/Users/jenni/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/synth_data/synth_data.srcs/constrs_1/imports/uart_demo/Cmod-A7-Master.xdc:21]
-Finished Parsing XDC File [C:/Users/jenni/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/synth_data/synth_data.srcs/constrs_1/imports/uart_demo/Cmod-A7-Master.xdc]
-WARNING: [Project 1-498] One or more constraints failed evaluation while reading constraint file [C:/Users/jenni/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/synth_data/synth_data.srcs/constrs_1/imports/uart_demo/Cmod-A7-Master.xdc] and the design contains unresolved black boxes. These constraints will be read post-synthesis (as long as their source constraint file is marked as used_in_implementation) and should be applied correctly then. You should review the constraints listed in the file [.Xil/top_propImpl.xdc] and check the run log file to verify that these constraints were correctly applied.
-INFO: [Project 1-236] Implementation specific constraints were found while reading constraint file [C:/Users/jenni/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/synth_data/synth_data.srcs/constrs_1/imports/uart_demo/Cmod-A7-Master.xdc]. These constraints will be ignored for synthesis but will be used in implementation. Impacted constraints are listed in the file [.Xil/top_propImpl.xdc].
+Parsing XDC File [c:/Users/archi/Documents/GitHub/digitalDesign/synth_data/synth_data.gen/sources_1/ip/clk_wiz_0/clk_wiz_0/clk_wiz_0_in_context.xdc] for cell 'clk_wiz'
+Finished Parsing XDC File [c:/Users/archi/Documents/GitHub/digitalDesign/synth_data/synth_data.gen/sources_1/ip/clk_wiz_0/clk_wiz_0/clk_wiz_0_in_context.xdc] for cell 'clk_wiz'
+Parsing XDC File [C:/Users/archi/OneDrive - University of Bristol/Vivado_Projects/Assignment 2/uart_demo/Cmod-A7-Master.xdc]
+WARNING: [Vivado 12-584] No ports matched 'clear'. [C:/Users/archi/OneDrive - University of Bristol/Vivado_Projects/Assignment 2/uart_demo/Cmod-A7-Master.xdc:21]
+Finished Parsing XDC File [C:/Users/archi/OneDrive - University of Bristol/Vivado_Projects/Assignment 2/uart_demo/Cmod-A7-Master.xdc]
+WARNING: [Project 1-498] One or more constraints failed evaluation while reading constraint file [C:/Users/archi/OneDrive - University of Bristol/Vivado_Projects/Assignment 2/uart_demo/Cmod-A7-Master.xdc] and the design contains unresolved black boxes. These constraints will be read post-synthesis (as long as their source constraint file is marked as used_in_implementation) and should be applied correctly then. You should review the constraints listed in the file [.Xil/top_propImpl.xdc] and check the run log file to verify that these constraints were correctly applied.
+INFO: [Project 1-236] Implementation specific constraints were found while reading constraint file [C:/Users/archi/OneDrive - University of Bristol/Vivado_Projects/Assignment 2/uart_demo/Cmod-A7-Master.xdc]. These constraints will be ignored for synthesis but will be used in implementation. Impacted constraints are listed in the file [.Xil/top_propImpl.xdc].
 Resolution: To avoid this warning, move constraints listed in [.Xil/top_propImpl.xdc] to another XDC file and exclude this new file from synthesis with the used_in_synthesis property (File Properties dialog in GUI) and re-run elaboration/synthesis.
 Completed Processing XDC Constraints
 
-Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.013 . Memory (MB): peak = 1762.395 ; gain = 0.000
+Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.001 . Memory (MB): peak = 1763.215 ; gain = 0.000
 INFO: [Project 1-111] Unisim Transformation Summary:
 No Unisim elements were transformed.
 
-Constraint Validation Runtime : Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.138 . Memory (MB): peak = 1762.395 ; gain = 0.000
-INFO: [Designutils 20-5440] No compile time benefit to using incremental synthesis; A full resynthesis will be run
-INFO: [Designutils 20-4379] Flow is switching to default flow due to incremental criteria not met. If you would like to alter this behaviour and have the flow terminate instead, please set the following parameter config_implementation {autoIncr.Synth.RejectBehavior Terminate}
+Constraint Validation Runtime : Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.021 . Memory (MB): peak = 1763.215 ; gain = 0.000
 ---------------------------------------------------------------------------------
-Finished Constraint Validation : Time (s): cpu = 00:00:43 ; elapsed = 00:00:59 . Memory (MB): peak = 1762.395 ; gain = 884.371
+Finished Constraint Validation : Time (s): cpu = 00:00:14 ; elapsed = 00:00:15 . Memory (MB): peak = 1763.215 ; gain = 880.863
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
 Start Loading Part and Timing Information
 ---------------------------------------------------------------------------------
 Loading part: xc7a35tcpg236-1
 ---------------------------------------------------------------------------------
-Finished Loading Part and Timing Information : Time (s): cpu = 00:00:43 ; elapsed = 00:00:59 . Memory (MB): peak = 1762.395 ; gain = 884.371
+Finished Loading Part and Timing Information : Time (s): cpu = 00:00:14 ; elapsed = 00:00:15 . Memory (MB): peak = 1763.215 ; gain = 880.863
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
 Start Applying 'set_property' XDC Constraints
 ---------------------------------------------------------------------------------
-Applied set_property IO_BUFFER_TYPE = NONE for clk. (constraint file  {c:/Users/jenni/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/synth_data/synth_data.gen/sources_1/ip/clk_wiz_0/clk_wiz_0/clk_wiz_0_in_context.xdc}, line 3).
-Applied set_property CLOCK_BUFFER_TYPE = NONE for clk. (constraint file  {c:/Users/jenni/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/synth_data/synth_data.gen/sources_1/ip/clk_wiz_0/clk_wiz_0/clk_wiz_0_in_context.xdc}, line 4).
+Applied set_property IO_BUFFER_TYPE = NONE for clk. (constraint file  c:/Users/archi/Documents/GitHub/digitalDesign/synth_data/synth_data.gen/sources_1/ip/clk_wiz_0/clk_wiz_0/clk_wiz_0_in_context.xdc, line 3).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for clk. (constraint file  c:/Users/archi/Documents/GitHub/digitalDesign/synth_data/synth_data.gen/sources_1/ip/clk_wiz_0/clk_wiz_0/clk_wiz_0_in_context.xdc, line 4).
 Applied set_property KEEP_HIERARCHY = SOFT for clk_wiz. (constraint file  auto generated constraint).
 ---------------------------------------------------------------------------------
-Finished applying 'set_property' XDC Constraints : Time (s): cpu = 00:00:43 ; elapsed = 00:00:59 . Memory (MB): peak = 1762.395 ; gain = 884.371
+Finished applying 'set_property' XDC Constraints : Time (s): cpu = 00:00:14 ; elapsed = 00:00:15 . Memory (MB): peak = 1763.215 ; gain = 880.863
 ---------------------------------------------------------------------------------
 WARNING: [Synth 8-6040] Register index_reg_rep driving address of a ROM cannot be packed in BRAM/URAM because of presence of initial value.
 INFO: [Synth 8-802] inferred FSM for state register 'txState_reg' in module 'UART_TX_CTRL'
@@ -123,7 +115,7 @@ INFO: [Synth 8-3354] encoded FSM with state register 'txState_reg' using encodin
 ---------------------------------------------------------------------------------------------------
 INFO: [Synth 8-3354] encoded FSM with state register 'currentState_reg' using encoding 'sequential' in module 'UART_RX_CTRL'
 ---------------------------------------------------------------------------------
-Finished RTL Optimization Phase 2 : Time (s): cpu = 00:00:53 ; elapsed = 00:01:16 . Memory (MB): peak = 1762.395 ; gain = 884.371
+Finished RTL Optimization Phase 2 : Time (s): cpu = 00:00:17 ; elapsed = 00:00:19 . Memory (MB): peak = 1763.215 ; gain = 880.863
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
 Start RTL Component Statistics 
@@ -134,7 +126,7 @@ Detailed RTL Component Info :
 	   2 Input   32 Bit       Adders := 1     
 	   2 Input   31 Bit       Adders := 2     
 	   2 Input   11 Bit       Adders := 2     
-	   2 Input   10 Bit       Adders := 1     
+	   2 Input   10 Bit       Adders := 2     
 	   3 Input   10 Bit       Adders := 1     
 	   2 Input    9 Bit       Adders := 4     
 	   2 Input    5 Bit       Adders := 1     
@@ -146,7 +138,7 @@ Detailed RTL Component Info :
 	               11 Bit    Registers := 1     
 	               10 Bit    Registers := 2     
 	                9 Bit    Registers := 5     
-	                8 Bit    Registers := 520   
+	                8 Bit    Registers := 522   
 	                4 Bit    Registers := 8     
 	                1 Bit    Registers := 9     
 +---Muxes : 
@@ -160,7 +152,7 @@ Detailed RTL Component Info :
 	   6 Input    3 Bit        Muxes := 1     
 	   3 Input    2 Bit        Muxes := 1     
 	   2 Input    2 Bit        Muxes := 1     
-	   2 Input    1 Bit        Muxes := 1029  
+	   2 Input    1 Bit        Muxes := 1033  
 	   6 Input    1 Bit        Muxes := 7     
 	   3 Input    1 Bit        Muxes := 505   
 	   4 Input    1 Bit        Muxes := 1     
@@ -182,7 +174,7 @@ Start Cross Boundary and Area Optimization
 WARNING: [Synth 8-7080] Parallel synthesis criteria is not met
 WARNING: [Synth 8-6040] Register dataGen1/index_reg_rep driving address of a ROM cannot be packed in BRAM/URAM because of presence of initial value.
 ---------------------------------------------------------------------------------
-Finished Cross Boundary and Area Optimization : Time (s): cpu = 00:02:04 ; elapsed = 00:02:48 . Memory (MB): peak = 2038.555 ; gain = 1160.531
+Finished Cross Boundary and Area Optimization : Time (s): cpu = 00:00:39 ; elapsed = 00:00:42 . Memory (MB): peak = 2033.820 ; gain = 1151.469
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
 Start ROM, RAM, DSP, Shift Register and Retiming Reporting
@@ -203,19 +195,19 @@ Finished ROM, RAM, DSP, Shift Register and Retiming Reporting
 Start Applying XDC Timing Constraints
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
-Finished Applying XDC Timing Constraints : Time (s): cpu = 00:02:17 ; elapsed = 00:03:07 . Memory (MB): peak = 2038.555 ; gain = 1160.531
+Finished Applying XDC Timing Constraints : Time (s): cpu = 00:00:43 ; elapsed = 00:00:46 . Memory (MB): peak = 2033.820 ; gain = 1151.469
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
 Start Timing Optimization
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
-Finished Timing Optimization : Time (s): cpu = 00:03:59 ; elapsed = 00:05:17 . Memory (MB): peak = 2129.656 ; gain = 1251.633
+Finished Timing Optimization : Time (s): cpu = 00:01:17 ; elapsed = 00:01:20 . Memory (MB): peak = 2126.707 ; gain = 1244.355
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
 Start Technology Mapping
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
-Finished Technology Mapping : Time (s): cpu = 00:04:11 ; elapsed = 00:05:35 . Memory (MB): peak = 2129.656 ; gain = 1251.633
+Finished Technology Mapping : Time (s): cpu = 00:01:21 ; elapsed = 00:01:24 . Memory (MB): peak = 2126.707 ; gain = 1244.355
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
 Start IO Insertion
@@ -233,37 +225,37 @@ Start Final Netlist Cleanup
 Finished Final Netlist Cleanup
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
-Finished IO Insertion : Time (s): cpu = 00:04:25 ; elapsed = 00:05:58 . Memory (MB): peak = 2129.656 ; gain = 1251.633
+Finished IO Insertion : Time (s): cpu = 00:01:26 ; elapsed = 00:01:29 . Memory (MB): peak = 2126.707 ; gain = 1244.355
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
 Start Renaming Generated Instances
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
-Finished Renaming Generated Instances : Time (s): cpu = 00:04:26 ; elapsed = 00:05:58 . Memory (MB): peak = 2129.656 ; gain = 1251.633
+Finished Renaming Generated Instances : Time (s): cpu = 00:01:26 ; elapsed = 00:01:29 . Memory (MB): peak = 2126.707 ; gain = 1244.355
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
 Start Rebuilding User Hierarchy
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
-Finished Rebuilding User Hierarchy : Time (s): cpu = 00:04:28 ; elapsed = 00:06:02 . Memory (MB): peak = 2129.656 ; gain = 1251.633
+Finished Rebuilding User Hierarchy : Time (s): cpu = 00:01:27 ; elapsed = 00:01:30 . Memory (MB): peak = 2126.707 ; gain = 1244.355
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
 Start Renaming Generated Ports
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
-Finished Renaming Generated Ports : Time (s): cpu = 00:04:28 ; elapsed = 00:06:02 . Memory (MB): peak = 2129.656 ; gain = 1251.633
+Finished Renaming Generated Ports : Time (s): cpu = 00:01:27 ; elapsed = 00:01:30 . Memory (MB): peak = 2126.707 ; gain = 1244.355
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
 Start Handling Custom Attributes
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
-Finished Handling Custom Attributes : Time (s): cpu = 00:04:30 ; elapsed = 00:06:05 . Memory (MB): peak = 2129.656 ; gain = 1251.633
+Finished Handling Custom Attributes : Time (s): cpu = 00:01:28 ; elapsed = 00:01:31 . Memory (MB): peak = 2126.707 ; gain = 1244.355
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
 Start Renaming Generated Nets
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
-Finished Renaming Generated Nets : Time (s): cpu = 00:04:31 ; elapsed = 00:06:05 . Memory (MB): peak = 2129.656 ; gain = 1251.633
+Finished Renaming Generated Nets : Time (s): cpu = 00:01:28 ; elapsed = 00:01:31 . Memory (MB): peak = 2126.707 ; gain = 1244.355
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
 Start Writing Synthesis Report
@@ -284,46 +276,46 @@ Report Cell Usage:
 |1     |clk_wiz      |     1|
 |2     |cmdProc_bbox |     1|
 |3     |CARRY4       |   178|
-|4     |LUT1         |   104|
-|5     |LUT2         |   186|
-|6     |LUT3         |   273|
-|7     |LUT4         |  1138|
-|8     |LUT5         |   701|
-|9     |LUT6         |  7923|
-|10    |MUXF7        |  1266|
-|11    |MUXF8        |   189|
+|4     |LUT1         |   108|
+|5     |LUT2         |   192|
+|6     |LUT3         |   315|
+|7     |LUT4         |  1446|
+|8     |LUT5         |   885|
+|9     |LUT6         |  7904|
+|10    |MUXF7        |   765|
+|11    |MUXF8        |   156|
 |12    |FDCE         |     4|
-|13    |FDRE         |  4432|
-|14    |FDSE         |    78|
+|13    |FDRE         |  4412|
+|14    |FDSE         |   111|
 |15    |IBUF         |     2|
 |16    |OBUF         |     1|
 +------+-------------+------+
 ---------------------------------------------------------------------------------
-Finished Writing Synthesis Report : Time (s): cpu = 00:04:31 ; elapsed = 00:06:05 . Memory (MB): peak = 2129.656 ; gain = 1251.633
+Finished Writing Synthesis Report : Time (s): cpu = 00:01:28 ; elapsed = 00:01:31 . Memory (MB): peak = 2126.707 ; gain = 1244.355
 ---------------------------------------------------------------------------------
 Synthesis finished with 0 errors, 0 critical warnings and 3 warnings.
-Synthesis Optimization Runtime : Time (s): cpu = 00:04:01 ; elapsed = 00:05:56 . Memory (MB): peak = 2129.656 ; gain = 1155.207
-Synthesis Optimization Complete : Time (s): cpu = 00:04:31 ; elapsed = 00:06:05 . Memory (MB): peak = 2129.656 ; gain = 1251.633
+Synthesis Optimization Runtime : Time (s): cpu = 00:01:18 ; elapsed = 00:01:28 . Memory (MB): peak = 2126.707 ; gain = 1150.984
+Synthesis Optimization Complete : Time (s): cpu = 00:01:28 ; elapsed = 00:01:31 . Memory (MB): peak = 2126.707 ; gain = 1244.355
 INFO: [Project 1-571] Translating synthesized netlist
-Parsing EDIF File [C:/Users/jenni/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/synth_data/synth_data.srcs/sources_1/imports/groupProject/fullSim/fullSim.srcs/sources_1/imports/peak_detector/cmdProc.edn]
-Finished Parsing EDIF File [C:/Users/jenni/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/synth_data/synth_data.srcs/sources_1/imports/groupProject/fullSim/fullSim.srcs/sources_1/imports/peak_detector/cmdProc.edn]
-Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.403 . Memory (MB): peak = 2129.656 ; gain = 0.000
-INFO: [Netlist 29-17] Analyzing 1639 Unisim elements for replacement
+Parsing EDIF File [C:/Users/archi/OneDrive - University of Bristol/Vivado_Projects/Assignment 2/peak_detector/cmdProc.edn]
+Finished Parsing EDIF File [C:/Users/archi/OneDrive - University of Bristol/Vivado_Projects/Assignment 2/peak_detector/cmdProc.edn]
+Netlist sorting complete. Time (s): cpu = 00:00:01 ; elapsed = 00:00:00.137 . Memory (MB): peak = 2126.707 ; gain = 0.000
+INFO: [Netlist 29-17] Analyzing 1105 Unisim elements for replacement
 INFO: [Netlist 29-28] Unisim Transformation completed in 0 CPU seconds
 WARNING: [Netlist 29-101] Netlist 'top' is not ideal for floorplanning, since the cellview 'dataConsume' contains a large number of primitives.  Please consider enabling hierarchy in synthesis if you want to do floorplanning.
 INFO: [Project 1-479] Netlist was created with Vivado 2018.2
 INFO: [Project 1-570] Preparing netlist for logic optimization
 INFO: [Opt 31-138] Pushed 0 inverter(s) to 0 load pin(s).
-Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.010 . Memory (MB): peak = 2129.656 ; gain = 0.000
+Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.002 . Memory (MB): peak = 2126.707 ; gain = 0.000
 INFO: [Project 1-111] Unisim Transformation Summary:
 No Unisim elements were transformed.
 
-Synth Design complete | Checksum: 405dd7be
+Synth Design complete | Checksum: 403a75ac
 INFO: [Common 17-83] Releasing license: Synthesis
-44 Infos, 6 Warnings, 0 Critical Warnings and 0 Errors encountered.
+38 Infos, 6 Warnings, 0 Critical Warnings and 0 Errors encountered.
 synth_design completed successfully
-synth_design: Time (s): cpu = 00:04:46 ; elapsed = 00:06:49 . Memory (MB): peak = 2129.656 ; gain = 1643.586
-Write ShapeDB Complete: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.065 . Memory (MB): peak = 2129.656 ; gain = 0.000
-INFO: [Common 17-1381] The checkpoint 'C:/Users/jenni/OneDrive - University of Bristol/Documents/CSE/Digital Design/groupProject/synth_data/synth_data.runs/synth_1/top.dcp' has been generated.
+synth_design: Time (s): cpu = 00:01:33 ; elapsed = 00:01:37 . Memory (MB): peak = 2126.707 ; gain = 1636.609
+Write ShapeDB Complete: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.012 . Memory (MB): peak = 2126.707 ; gain = 0.000
+INFO: [Common 17-1381] The checkpoint 'C:/Users/archi/Documents/GitHub/digitalDesign/synth_data/synth_data.runs/synth_1/top.dcp' has been generated.
 INFO: [runtcl-4] Executing : report_utilization -file top_utilization_synth.rpt -pb top_utilization_synth.pb
-INFO: [Common 17-206] Exiting Vivado at Mon Apr 22 14:32:35 2024...
+INFO: [Common 17-206] Exiting Vivado at Tue Apr 23 16:20:16 2024...

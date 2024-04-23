@@ -28,7 +28,8 @@ signal curState, nextState: state_type;
 -- index: position of data point currently being compared
 -- max_index: position of largest currently known data point
 -- num_words_reg: stores desired number of words from input
-signal index, max_index, num_words_reg: integer range 0 to SEQ_LENGTH -1;
+signal max_index, num_words_reg: integer range 0 to SEQ_LENGTH -1;
+signal index: integer range 0 to SEQ_LENGTH +2;
 -- temp #EXPLAIN
 signal temp : integer;
 -- data_reg: register to synchronously store current data point
@@ -46,7 +47,7 @@ signal data_results_reg : CHAR_ARRAY_TYPE(0 to RESULT_BYTE_NUM-1);
 signal max_ind_bcd : BCD_ARRAY_TYPE(0 to 2);
 type INT_ARRAY is array (integer range<>) of integer;
 -- data_store: register that stores full sequence of data points from data generator
-signal data_store : CHAR_ARRAY_TYPE(0 to SEQ_LENGTH + 3);
+signal data_store : CHAR_ARRAY_TYPE(0 to SEQ_LENGTH + 5);
 
 begin
 
@@ -71,9 +72,11 @@ begin
             byte <= data_reg;
             data_store(0) <= "00000000";
             data_store(1) <= "00000000";
-            data_store(2) <= data_reg;
-            data_store(SEQ_LENGTH + 1) <= "00000000";
-            data_store(SEQ_LENGTH + 2) <= "00000000";
+            data_store(2) <= "00000000";
+            data_store(3) <= data_reg;
+            data_store(SEQ_LENGTH + 3) <= "00000000";
+            data_store(SEQ_LENGTH + 4) <= "00000000";
+            data_store(SEQ_LENGTH + 5) <= "00000000";
         elsif curState = read_data then
             data_store(index) <= data_reg;
             byte <= data_reg;
@@ -86,7 +89,7 @@ int_to_bcd : process(clk)
 begin
     if rising_edge(clk) then
         if curState = set_digit1 then -- set the unit digit of the BCD value
-            max_ind_bcd(0) <= std_logic_vector(to_unsigned((max_index - 2) mod 10, BCD_WORD_LENGTH));
+            max_ind_bcd(0) <= std_logic_vector(to_unsigned((max_index - 3) mod 10, BCD_WORD_LENGTH));
             temp <= (max_index - max_index mod 10) / 10; 
         elsif curState = set_digit2 then -- set the tens digit of the BCD value
             max_ind_bcd(1) <= std_logic_vector(to_unsigned(temp mod 10, BCD_WORD_LENGTH));
@@ -136,7 +139,7 @@ set_max_index : process(clk)
 begin
     if rising_edge(clk) then
         if curState = wait_start then
-            max_index <= 2;
+            max_index <= 3;
         elsif curState = new_max then
             max_index <= index;
         end if;
@@ -148,7 +151,7 @@ count : process(clk)
 begin
     if rising_edge(clk) then
         if curState = wait_start then
-            index <= 2;
+            index <= 3;
         elsif curState = prep_data then
             index <= index + 1;
         end if;
@@ -234,20 +237,21 @@ begin
             
         when new_data =>
             if ctrlIn_detected = '1' then
-                nextState <= check_index;
+                nextState <= read_data;
             else 
                 nextState <= new_data;
             end if;
             
+        when read_data =>
+            nextState <= check_index;
+            
         when check_index =>
-            if index < num_words_reg then
-                nextState <= read_data;
+            if index - 3 < num_words_reg then
+                nextState <= compare;
             else
                 nextState <= end_data;
             end if;
             
-        when read_data =>
-            nextState <= compare;
                 
         when compare =>
             if signed(data_store(index)) > signed(data_store(max_index)) then
