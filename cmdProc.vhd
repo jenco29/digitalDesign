@@ -477,7 +477,7 @@ begin
           byte_sent <= false;
 
         when ANNN_BYTE_OUT1  =>
-        to_be_sent <= to_ascii(nibble1); 
+          to_be_sent <= to_ascii(nibble1); 
 
           enSend <= true;
          
@@ -547,10 +547,8 @@ begin
     if rising_edge(clk) then
         if rxnow_reg = '1'  then --ADD AND RXNOW='1' BACK IN PLSSSSSSSSSSSSSSSS              
             txNow <= '1';
-        elsif topCurState = ANNN_BYTE_OUT1 then   
-             txNow <= '1';   
-        elsif topCurState = ANNN_BYTE_OUT2 and enSent=true then   
-             txNow <= '1';   
+        elsif topCurState = ANNN_BYTE_OUT1 or topCurState = ANNN_BYTE_OUT2 then   
+             txNow <= '1';      
        else 
           txNow <= '0';        
         end if;      
@@ -572,7 +570,7 @@ end process;
 txData_Out3 : process(clk)
 begin
     if rising_edge(clk) then
-            if topCurState = SEQ_DONE or topCurState = ANNN_BYTE_IN or topCurState = ANNN_BYTE_OUT1 or topCurState = ANNN_BYTE_OUT2 or topCurState = ANNN_BYTE_COUNT or topCurState = ANNN_DONE_CHECK then   
+            if topCurState = ANNN or topCurState = ANNN_BYTE_IN or topCurState = ANNN_BYTE_OUT1 or topCurState = ANNN_BYTE_OUT2 or topCurState = ANNN_BYTE_COUNT or topCurState = ANNN_DONE_CHECK then   
                   sending <=to_be_sent;  
             else
                   sending <=data_reg;  
