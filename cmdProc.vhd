@@ -60,7 +60,7 @@ function to_ascii(value : std_logic_vector) return std_logic_vector is
  end function;
 
 -- State declaration for main FSM
-  TYPE state_type IS (INIT, DATA_ECHO, INIT_BYTE, A, A_WAIT, AN, AN_WAIT, ANN, ANN_WAIT, ANNN, ANNN_BYTE_IN, ANNN_BYTE_COUNT, ANNN_BYTE_OUT1, ANNN_BYTE_OUT2, ANNN_DONE ,P, P_BYTE1, P_BYTE2, P_SPACE, P_INDEX1,P_INDEX2,P_INDEX3, LIST_INIT, LIST_PRINT1, LIST_PRINT2);  -- List your states here 	
+  TYPE state_type IS (INIT, DATA_ECHO, INIT_BYTE, A, A_WAIT, AN, AN_WAIT, ANN, ANN_WAIT, ANNN, ANNN_BYTE_IN, ANNN_BYTE_COUNT, ANNN_BYTE_OUT1,ANNN_BYTE_OUT1_DONE, ANNN_BYTE_OUT2,ANNN_BYTE_OUT2_DONE, ANNN_DONE ,P, P_BYTE1, P_BYTE2, P_SPACE, P_INDEX1,P_INDEX2,P_INDEX3, LIST_INIT, LIST_PRINT1, LIST_PRINT2);  -- List your states here 	
   SIGNAL topCurState, topNextState: state_type;
     
     signal data_reg, byte_reg: std_logic_vector(7 downto 0);   -- data_reg: register to synchronously store byte from rx
@@ -129,6 +129,10 @@ begin
     if rising_edge(clk) then 
         if topCurState=ANNN THEN
          start<='1'; 
+        elsif topCurState=ANNN_BYTE_IN or topCurState=ANNN_BYTE_COUNT or topCurState=ANNN_BYTE_IN or topCurState=ANNN_BYTE_OUT1 or topCurState=ANNN_BYTE_OUT2 then
+                   if index < NNN then
+                                      start<='1'; 
+                   end if;
         elsif index > NNN then
            start<='0'; 
         else 
@@ -193,9 +197,9 @@ end process;
 SET_NUMWORDS_REG : process(clk)
 begin    
     if rising_edge(clk) then
-          numwords_bcd(2) <= ANNN_reg(2);
+          numwords_bcd(2) <= ANNN_reg(0);
           numwords_bcd(1) <= ANNN_reg(1);
-          numwords_bcd(0) <= ANNN_reg(0);   
+          numwords_bcd(0) <= ANNN_reg(2);   
     end if;
 end process;
 
@@ -310,22 +314,36 @@ end process;
                
         WHEN ANNN_BYTE_OUT1 =>
         IF enSent = true THEN 
+            topNextState <= ANNN_BYTE_OUT1_DONE;
+        ELSE
+           topNextState <= ANNN_BYTE_OUT1_DONE;
+        END IF;
+        
+                WHEN ANNN_BYTE_OUT1_DONE =>
+        IF enSent = true THEN 
             topNextState <= ANNN_BYTE_OUT2;
         ELSE
-           topNextState <= ANNN_BYTE_OUT1;
+           topNextState <= ANNN_BYTE_OUT1_DONE;
         END IF;
         
         
         WHEN ANNN_BYTE_OUT2 =>
-
+        IF enSent = true THEN 
+            topNextState <= ANNN_BYTE_OUT2_DONE;
+        ELSE
+           topNextState <= ANNN_BYTE_OUT2_DONE;
+        END IF;
+        
+        
+            
+                            WHEN ANNN_BYTE_OUT2_DONE =>
         IF byte_done=true THEN
                     topNextState <= ANNN_DONE;
         ELSIF enSent = true THEN
                    topNextState <= ANNN_BYTE_IN;
         ELSE
                    topNextState <= ANNN_BYTE_OUT2;               
-        END IF;          
-            
+        END IF;  
         
         WHEN ANNN_DONE =>
             IF seqDone='1' THEN
@@ -507,9 +525,7 @@ begin
         if rxnow_reg = '1'  then --ADD AND RXNOW='1' BACK IN PLSSSSSSSSSSSSSSSS              
             txNow <= '1';
         elsif enSend = true then   
-             txNow <= '1';    
-                elsif enSend = true then   
-    
+             txNow <= '1';      
        else 
           txNow <= '0';        
         end if;      
