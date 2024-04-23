@@ -210,8 +210,8 @@ begin
         if dataReady = '1' then
             byte_reg <= byte;
         end if;
-          nibble1 <= byte_store(ANNN_byteCount)(3 downto 0); 
-          nibble2 <= byte_store(ANNN_byteCount)(7 downto 4);
+          nibble1 <= byte_store(index)(3 downto 0); 
+          nibble2 <= byte_store(index)(7 downto 4);
     end if;
 end process; 
 
@@ -467,7 +467,7 @@ begin
           byte_sent <= true;
           
         when ANNN_DONE => 
-          --start <= '0';    
+        
         when P =>
           peakStore <= dataResults(3); 
           peakStored <= true;
