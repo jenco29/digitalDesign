@@ -239,8 +239,9 @@ begin
         if dataReady = '1' then
             byte_reg <= byte;
         end if;
-          nibble1 <= byte_store(ANNN_byteCount)(3 downto 0); 
-          nibble2 <= byte_store(ANNN_byteCount)(7 downto 4);
+          nibble1 <= byte_store(ANNN_byteCount)(7 downto 4); 
+          nibble2 <= byte_store(ANNN_byteCount)(3 downto 0);
+          
     end if;
 end process; 
 
@@ -476,7 +477,6 @@ begin
           byte_sent <= false;
 
         when ANNN_BYTE_OUT1  =>
-          to_be_sent <= to_ascii(nibble1); 
           enSend <= true;
          
         when ANNN_BYTE_OUT2  =>
@@ -545,7 +545,7 @@ begin
     if rising_edge(clk) then
         if rxnow_reg = '1'  then --ADD AND RXNOW='1' BACK IN PLSSSSSSSSSSSSSSSS              
             txNow <= '1';
-        elsif enSend = true then   
+        elsif topCurState = ANNN_BYTE_OUT1 or topCurState = ANNN_BYTE_OUT2 then   
              txNow <= '1';      
        else 
           txNow <= '0';        
