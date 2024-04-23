@@ -205,8 +205,8 @@ begin
         if dataReady = '1' then
             byte_reg <= byte;
         end if;
-          nibble1 <= byte_reg(3 downto 0); 
-          nibble2 <= byte_reg(7 downto 4);
+          nibble1 <= byte_store(ANNN_byteCount)(3 downto 0); 
+          nibble2 <= byte_store(ANNN_byteCount)(7 downto 4);
     end if;
 end process; 
 
@@ -293,7 +293,7 @@ end process;
         END IF;
                       
         WHEN ANNN_BYTE_IN =>
-        IF dataReady_reg = '1' THEN 
+        IF dataReady_reg = '0' THEN 
             topNextState <= ANNN_BYTE_COUNT;
         ELSE
            topNextState <= ANNN_BYTE_IN;
