@@ -73,7 +73,7 @@ function to_ascii(value : std_logic_vector) return std_logic_vector is
     
     signal ListCount, ANNN_byteCount,NNN,digitCount : integer :=0;
 
-    signal enSend, enSent, peakStored, listStored, NNNStored, start_data_echo : boolean := false;
+    signal enSend, enSent, peakStored, listStored, NNNStored : boolean := false;
 
     signal rxnow_reg, txdone_reg, dataReady_reg, seqDone_reg  : std_logic;
     signal maxIndex_reg : BCD_ARRAY_TYPE(3 downto 0);
@@ -247,7 +247,7 @@ end process;
         
                
         WHEN ANNN_BYTE_IN =>
-        IF dataReady = '0' THEN 
+        IF dataReady_reg = '0' THEN 
             topNextState <= ANNN_BYTE_OUT1;
         ELSE
            topNextState <= ANNN_BYTE_IN;
@@ -262,8 +262,7 @@ end process;
         
         
         WHEN ANNN_BYTE_OUT2 =>
-        IF enSent = true THEN 
-        
+        IF enSent = true THEN        
             IF seqDone='0' THEN
                 topNextState <= ANNN_BYTE_IN;               
             ELSE
@@ -488,7 +487,7 @@ end process;
 txData_byte_count : process(clk)
 begin
     if rising_edge(clk) then
-            if dataReady = '1' then    
+            if dataReady_reg = '1' then    
                   ANNN_byteCount <= ANNN_byteCount + 1;
             end if;
     end if;
