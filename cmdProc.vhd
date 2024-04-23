@@ -60,7 +60,7 @@ function to_ascii(value : std_logic_vector) return std_logic_vector is
  end function;
 
 -- State declaration for main FSM
-  TYPE state_type IS (INIT, DATA_ECHO, INIT_BYTE, A, A_WAIT, AN, AN_WAIT, ANN, ANN_WAIT, ANNN, ANNN_BYTE_IN, ANNN_BYTE_OUT1, ANNN_BYTE_OUT2, ANNN_DONE ,P, P_BYTE1, P_BYTE2, P_SPACE, P_INDEX1,P_INDEX2,P_INDEX3, LIST_INIT, LIST_PRINT1, LIST_PRINT2);  -- List your states here 	
+  TYPE state_type IS (INIT, DATA_ECHO, INIT_BYTE, A, A_WAIT, AN, AN_WAIT, ANN, ANN_WAIT, ANNN, ANNN_BYTE_IN, ANNN_BYTE_COUNT, ANNN_BYTE_OUT1, ANNN_BYTE_OUT2, ANNN_DONE ,P, P_BYTE1, P_BYTE2, P_SPACE, P_INDEX1,P_INDEX2,P_INDEX3, LIST_INIT, LIST_PRINT1, LIST_PRINT2);  -- List your states here 	
   SIGNAL topCurState, topNextState: state_type;
     
     signal data_reg, byte_reg: std_logic_vector(7 downto 0);   -- data_reg: register to synchronously store byte from rx
@@ -110,6 +110,26 @@ begin
     end if;
 end process; 
 
+reg_bytecount : process(clk)
+--storing data value inputted on the clock edge
+begin
+    if rising_edge(clk)and topCurState=ANNN_BYTE_COUNT then    
+                   ANNN_byteCount <= ANNN_byteCount +1;
+            end if;
+end process; 
+
+byteDone : process(clk)
+--storing data value inputted on the clock edge
+begin
+    if rising_edge(clk)THEN
+    IF ANNN_byteCount>NNN then    
+                   byte_done<=true;
+     ELSE
+                        byte_done<=false;
+            end if;
+            END IF;
+end process; 
+
 reg_seqDone : process(clk)
 --storing data value inputted on the clock edge
 begin
@@ -155,9 +175,9 @@ reg_byte : process(clk)
 --storing data value inputted on the clock edge
 begin
     if rising_edge(clk) then
-        --if dataReady = '1' then
+        if dataReady = '1' then
             byte_reg <= byte;
-        --end if;
+        end if;
           nibble1 <= byte_reg(3 downto 0); 
           nibble2 <= byte_reg(7 downto 4);
     end if;
@@ -244,14 +264,21 @@ end process;
         ELSE
             topNextState <= ANNN;
         END IF;
-        
-               
+                      
         WHEN ANNN_BYTE_IN =>
-        IF dataReady_reg = '0' THEN 
-            topNextState <= ANNN_BYTE_OUT1;
+        IF dataReady_reg = '1' THEN 
+            topNextState <= ANNN_BYTE_COUNT;
         ELSE
            topNextState <= ANNN_BYTE_IN;
         END IF;
+        
+        WHEN ANNN_BYTE_COUNT =>
+        IF dataReady_reg = '1' THEN 
+            topNextState <= ANNN_BYTE_OUT1;
+        ELSE
+           topNextState <= ANNN_BYTE_OUT1;
+        END IF;
+
                
         WHEN ANNN_BYTE_OUT1 =>
         IF enSent = true THEN 
@@ -262,16 +289,14 @@ end process;
         
         
         WHEN ANNN_BYTE_OUT2 =>
-        IF enSent = true THEN        
             IF byte_done=true THEN
                     topNextState <= ANNN_DONE;
             ELSE
-                   topNextState <= ANNN_BYTE_IN;               
+                   topNextState <= ANNN_BYTE_OUT2;               
             END IF;       
+            
+            
              
-        ELSE
-             topNextState <= ANNN_BYTE_OUT2;
-        END IF;
         
         WHEN ANNN_DONE =>
             IF seqDone='1' THEN
@@ -365,7 +390,6 @@ begin
         
         when INIT =>
             start <= '0';
-            byte_done<= false;
 
         when A => 
           
@@ -397,7 +421,6 @@ begin
           
         when ANNN_DONE => 
           start <= '0';    
-          byte_done<= true;
         when P =>
           peakStore <= dataResults(3); 
           peakStored <= true;
