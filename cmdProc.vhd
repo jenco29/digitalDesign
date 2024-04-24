@@ -61,8 +61,8 @@ function to_ascii(value : std_logic_vector) return std_logic_vector is
 
 -- State declaration for main FSM
   TYPE state_type IS (INIT, DATA_ECHO, INIT_BYTE, A, A_WAIT, AN, AN_WAIT, ANN, ANN_WAIT, ANNN, ANNN_BYTE_IN,ANNN_BYTE_OUT1_DONE,
-  ANNN_BYTE_OUT2_DONE,SEND_SPACE, ANNN_DONE_CHECK, SEQ_DONE,ANNN_BYTE_COUNT, ANNN_BYTE_OUT1, ANNN_BYTE_OUT2, ANNN_DONE ,P, P_BYTE1, P_BYTE2, 
-  P_SPACE, P_INDEX1,P_INDEX2,P_INDEX3, LIST_INIT, LIST_PRINT1, LIST_PRINT1_DONE,LIST_SPACE, LIST_PRINT2, LIST_PRINT2_DONE, LIST_COUNT);  -- List your states here 	
+  ANNN_BYTE_OUT2_DONE,SEND_SPACE, ANNN_DONE_CHECK, SEQ_DONE,ANNN_BYTE_COUNT, ANNN_BYTE_OUT1, ANNN_BYTE_OUT2, ANNN_DONE ,P, P_BYTE1,P_BYTE1_DONE,
+  P_BYTE2, P_BYTE2_DONE, P_SPACE, P_INDEX1, P_INDEX1_DONE, P_INDEX2, P_INDEX2_DONE,P_INDEX3, LIST_INIT, LIST_PRINT1, LIST_PRINT1_DONE,LIST_SPACE, LIST_PRINT2, LIST_PRINT2_DONE, LIST_COUNT);  -- List your states here 	
   SIGNAL curState, nextState: state_type;
     
     signal data_reg, byte_reg: std_logic_vector(7 downto 0);   -- data_reg: register to synchronously store byte from rx
@@ -419,17 +419,31 @@ end process;
              
           WHEN P_BYTE1 =>
             IF enSent = true THEN 
+                nextState <= P_BYTE1_DONE;
+            ELSE
+               nextState <= P_BYTE1_DONE;                
+            END IF;
+            
+                   WHEN P_BYTE1_DONE =>
+            IF enSent = true THEN 
                 nextState <= P_BYTE2;
             ELSE
-               nextState <= P_BYTE1;                
+               nextState <= P_BYTE1_DONE;                
             END IF;
              
          WHEN P_BYTE2 =>
             IF enSent = true THEN 
-                nextState <= P_SPACE;
+                nextState <= P_BYTE2_DONE;
              ELSE
-               nextState <= P_BYTE2;               
+               nextState <= P_BYTE2_DONE;               
              END IF;
+             
+             WHEN P_BYTE2_DONE =>
+            IF enSent = true THEN 
+                nextState <= P_SPACE;
+            ELSE
+               nextState <= P_BYTE2_DONE;                
+            END IF;
              
          WHEN P_SPACE =>
             IF enSent = true THEN 
@@ -440,17 +454,31 @@ end process;
              
         WHEN P_INDEX1 =>
             IF enSent = true THEN 
-                nextState <= P_INDEX2;
+                nextState <= P_INDEX1_DONE;
             ELSE
-               nextState <= P_INDEX1;
+               nextState <= P_INDEX1_DONE;
              END IF; 
              
+                 WHEN P_INDEX1_DONE =>
+            IF enSent = true THEN 
+                nextState <= P_INDEX2;
+            ELSE
+               nextState <= P_INDEX1_DONE;
+             END IF; 
+                 
          WHEN P_INDEX2 =>
             IF enSent = true THEN 
                 nextState <= P_INDEX3;
             ELSE
                nextState <= P_INDEX2;
-             END IF;        
+             END IF;   
+             
+               WHEN P_INDEX2_DONE =>
+            IF enSent = true THEN 
+                nextState <= P_INDEX3;
+            ELSE
+               nextState <= P_INDEX2_DONE;
+             END IF;      
                    
        WHEN P_INDEX3 =>
             IF enSent = true THEN 
@@ -458,6 +486,7 @@ end process;
             ELSE
                nextState <= P_INDEX3;
              END IF; 
+             
         
        WHEN LIST_INIT =>
         IF listCount = 7 THEN 
@@ -570,11 +599,11 @@ begin
           peakStored <= true;
 
           when P_BYTE1 =>
-           to_be_sent <= to_ascii(peakStore(3 downto 0));           
-            enSend <= true;
+           to_be_sent <= to_ascii(peakStore(7 downto 4));           
+            enSend <= true;           
             
           when P_BYTE2 =>
-           to_be_sent <= to_ascii(peakStore(7 downto 4));                    
+           to_be_sent <= to_ascii(peakStore(3 downto 0));                    
             enSend <= true;
             
            when P_SPACE =>         
@@ -641,6 +670,16 @@ begin
              txNow <= '1';
         elsif curState = LIST_PRINT2 and enSent=true then 
              txNow <= '1';                        
+                 elsif curState = P_BYTE1 and enSent=true then 
+             txNow <= '1';
+        elsif curState = P_BYTE2 and enSent=true then 
+             txNow <= '1';   
+                 elsif curState = P_INDEX1 and enSent=true then 
+             txNow <= '1'; 
+                     elsif curState = P_INDEX2 and enSent=true then 
+             txNow <= '1'; 
+                     elsif curState = P_INDEX3 and enSent=true then 
+             txNow <= '1'; 
        else 
           txNow <= '0';        
         end if;      
@@ -664,7 +703,8 @@ begin
     if rising_edge(clk) then
             if curState = ANNN_BYTE_COUNT or curState = ANNN_DONE_CHECK or curState=ANNN_BYTE_OUT1 or curState=ANNN_BYTE_OUT2 or curState = LIST_COUNT
             or curState= SEND_SPACE or curState = ANNN_BYTE_OUT1_DONE or curState = ANNN_BYTE_OUT2_DONE or curState = LIST_PRINT1 or curState = LIST_PRINT2
-            or curState= LIST_PRINT1_DONE or curState= LIST_PRINT2_DONE or curState= LIST_SPACE then   
+            or curState= LIST_PRINT1_DONE or curState= LIST_PRINT2_DONE or curState= LIST_SPACE or curState= P_BYTE1 or curState= P_BYTE1_DONE or curState= P_BYTE2
+            or curState= P_BYTE2_DONE or curState= P_INDEX1 or curState= P_INDEX1_DONE or curState= P_INDEX2 or curState= P_INDEX2_DONE or curState = P_SPACE or curState= P_INDEX3  then   
                   sending <=to_be_sent;
                
             else
