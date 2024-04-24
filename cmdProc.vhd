@@ -65,23 +65,23 @@ function to_ascii(value : std_logic_vector) return std_logic_vector is
   P_BYTE2, P_BYTE2_DONE, P_SPACE, P_INDEX1, P_INDEX1_DONE, P_INDEX2, P_INDEX2_DONE,P_INDEX3, LIST_INIT, LIST_PRINT1, LIST_PRINT1_DONE,LIST_SPACE, LIST_PRINT2, LIST_PRINT2_DONE, LIST_COUNT);  -- List your states here 	
   SIGNAL curState, nextState: state_type;
     
-    signal data_reg, byte_reg: std_logic_vector(7 downto 0);   -- data_reg: register to synchronously store byte from rx
+    signal data_reg, byte_reg: std_logic_vector(7 downto 0):= (others => '0');   -- data_reg: register to synchronously store byte from rx
 
-    signal to_be_sent,sending: std_logic_vector(7 downto 0); --to store the next byte to be sent to tx in hex
+    signal to_be_sent,sending: std_logic_vector(7 downto 0) := (others => '0'); --to store the next byte to be sent to tx in hex
     signal ANNN_reg : BCD_ARRAY_TYPE(2 downto 0); -- N registers
     
-    signal nibble1, nibble2: std_logic_vector(3 downto 0);
-    signal peakStore, listStore: std_logic_vector(7 downto 0);
+    signal nibble1, nibble2: std_logic_vector(3 downto 0):= (others => '0');
+    signal peakStore, listStore: std_logic_vector(7 downto 0) := (others => '0');
     
     signal listCount, ANNN_byteCount,NNN,digitCount,index : integer :=0;
 
     signal enSend, enSent, peakStored, listStored, NNNStored,bytes_stored, byte_sent, byte_done, results_stored, ANNN_end : boolean := false;
 
     signal rxnow_reg, txdone_reg, dataReady_reg, seqDone_reg  : std_logic;
-    signal maxIndex_reg : BCD_ARRAY_TYPE(2 downto 0);
-    signal dataResults_reg : CHAR_ARRAY_TYPE(0 to RESULT_BYTE_NUM-1); -- N registers
+    signal maxIndex_reg : BCD_ARRAY_TYPE(2 downto 0) := (others => (others => '0'));
+    signal dataResults_reg : CHAR_ARRAY_TYPE(0 to RESULT_BYTE_NUM-1) := (others => ( others => '0')); -- N registers
     -- byte store: register that stores full sequence of bytes from data processor
-signal byte_store : CHAR_ARRAY_TYPE(0 to SEQ_LENGTH + 5);
+    signal byte_store : CHAR_ARRAY_TYPE(0 to SEQ_LENGTH + 5) := (others => ( others => '0'));
 
         -- constants of symbols in ASCII binary code
     constant lowerp : std_logic_vector (7 downto 0) := "01110000";
@@ -111,10 +111,15 @@ end process;
 store_byte : process(clk)
 begin
     if rising_edge(clk) then
+    
+    if curState = INIT then
+        index <= 0;
+    else
         if dataReady_reg='1' then
             byte_store(index) <= byte_reg;
-            index<=index+1;
-        end if;
+            index<=index+1;           
+        end if;       
+    end if;
     end if;
 end process; 
 
@@ -181,16 +186,24 @@ end process;
 reg_bytecount : process(clk)
 --storing data value inputted on the clock edge
 begin
-    if rising_edge(clk)and curState=ANNN_BYTE_COUNT then    
+    if rising_edge(clk) then
+                if curState = INIT then
+                ANNN_byteCount<= 0;
+                elsif curState=ANNN_BYTE_COUNT then   
                    ANNN_byteCount <= ANNN_byteCount +1;
+                end if;
             end if;
 end process; 
 
 reg_listcount : process(clk)
 --storing data value inputted on the clock edge
 begin
-    if rising_edge(clk)and curState=LIST_COUNT then    
+    if rising_edge(clk) then
+                if curState = INIT then
+                listCount <= 0;
+                elsif curState=LIST_COUNT then   
                    listCount <= listCount +1;
+                end if;
             end if;
 end process; 
 
@@ -238,7 +251,7 @@ begin
     end if;
 end process;
 
-SET_NUMWORDS_REG : process(clk)
+SET_NUMWORDS : process(clk)
 begin    
     if rising_edge(clk) then
           numwords_bcd(2) <= ANNN_reg(0);
