@@ -75,7 +75,7 @@ function to_ascii(value : std_logic_vector) return std_logic_vector is
     
     signal listCount, ANNN_byteCount,NNN,digitCount,index : integer :=0;
 
-    signal enSend, enSent, peakStored, listStored, NNNStored,bytes_stored, byte_sent, results_stored, ANNN_end : boolean := false;
+    signal enSend, enSent, peakStored, listStored, NNNStored,bytes_stored, byte_sent, results_stored, ANNN_end, newNNN : boolean := false;
 
     signal rxnow_reg, txdone_reg, dataReady_reg, seqDone_reg  : std_logic;
     signal maxIndex_reg : BCD_ARRAY_TYPE(2 downto 0) := (others => (others => '0'));
@@ -277,13 +277,7 @@ end process;
 SET_ANN_REG : process(clk)
 begin    
     if rising_edge(clk) then
-        if curState = INIT then
-              ANNN_reg(0) <= "0000";
-              ANNN_reg(1) <= "0000";
-              ANNN_reg(2) <= "0000";
-            else
-              ANNN_reg(digitCount+1) <= data_reg(3 downto 0);
-            end if;
+              ANNN_reg(digitCount) <= data_reg(3 downto 0);
     end if;
 end process;
 
@@ -615,49 +609,55 @@ begin
           digitCount <= 0;
           elsif curState = ANN_WAIT then
           digitCount <= 1;
-          elsif curState = ANN_WAIT then
-          digitCount <= 1;           
+          elsif curState = ANNN then
+          digitCount <= 2;           
             else
-                enSend<= false;           
+          digitCount <= 0;           
             end if;
 end process; 
+
+
+  set_NNN : process(curState)
+--storing data value inputted on the clock edge
+begin
+         NNN <= ( (TO_INTEGER(UNSIGNED(ANNN_reg(0)))*100) + (TO_INTEGER(UNSIGNED(ANNN_reg(1)))*10) + (TO_INTEGER(UNSIGNED(ANNN_reg(2)))));          
+end process; 
+
+  set_NNNStored : process(curState)
+--storing data value inputted on the clock edge
+begin
+            if curState = ANNN  then
+          NNNStored <= true;
+          ELSE
+           NNNStored <= false;         
+          END IF;
+end process; 
+ 
+   set_byte_sent : process(curState)
+--storing data value inputted on the clock edge
+begin
+         if curState = SEND_SPACE  then
+          byte_sent <= true;
+          ELSE
+           byte_sent <= false;         
+          END IF;
+end process;   
+
+   set_peakStore : process(curState)
+--storing data value inputted on the clock edge
+begin
+         if curState = P  then
+          peakStore <= dataResults_reg(3); 
+          ELSE
+          peakStore <= dataResults_reg(3); 
+          END IF;
+end process; 
+       
   --processes on fsm states
 state_logic : process(curState, clk)
 begin
     case curState is
-                 
-        when AN_WAIT => 
-          enSend <=false;
-        
-          digitCount <= 0;
-                        
-          
-        when ANN_WAIT => 
-              digitCount <= 1;
-
-                  
-        when ANNN => --start proc
-         NNN <= ( (TO_INTEGER(UNSIGNED(ANNN_reg(0)))*100) + (TO_INTEGER(UNSIGNED(ANNN_reg(1)))*10) + (TO_INTEGER(UNSIGNED(ANNN_reg(2)))));
-         -- start <= '1'; 
-          NNNStored <= true;
-        
-        when ANNN_BYTE_IN   =>            
-          enSend <=false;
-          byte_sent <= false;
-
-        when ANNN_BYTE_OUT1  =>
-          enSend <= true;
-         
-        when ANNN_BYTE_OUT2  =>
-          enSend <= true;
-          
-          when SEND_SPACE  =>
-          enSend <= true;
-          byte_sent <= true;
-          
-        when ANNN_DONE_CHECK => 
-
-        
+      
         when P =>
           peakStore <= dataResults_reg(3); 
           peakStored <= true;
