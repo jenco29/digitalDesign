@@ -413,7 +413,7 @@ end process;
         IF enSent = true THEN 
             nextState <= ANNN_BYTE_OUT1_DONE;
         ELSE
-           nextState <= ANNN_BYTE_OUT1_DONE;
+           nextState <= ANNN_BYTE_OUT1;
         END IF;
         
                 WHEN ANNN_BYTE_OUT1_DONE =>
@@ -427,7 +427,7 @@ end process;
         IF enSent = true THEN 
             nextState <= ANNN_BYTE_OUT2_DONE;
         ELSE
-           nextState <= ANNN_BYTE_OUT2_DONE;
+           nextState <= ANNN_BYTE_OUT2;
         END IF;        
         
                 WHEN ANNN_BYTE_OUT2_DONE =>
@@ -703,7 +703,7 @@ begin
         elsif (curState = ANNN_BYTE_OUT1 or curState = ANNN_BYTE_OUT2 or 
         curState = LIST_PRINT1 or curState = LIST_PRINT2 or curState = P_BYTE1 or
         curState = P_BYTE2 or curState = P_INDEX1 or curState = P_INDEX2 or
-        curState = P_INDEX3 or curState = SEND_SPACE or curState = LIST_SPACE) and enSent=true and enSend=false then
+        curState = P_INDEX3 or curState = SEND_SPACE or curState = LIST_SPACE) and enSent=true then
             txNow <= '1';  
              
              elsif curState = P_INDEX3 and enSent=true then 
@@ -714,16 +714,16 @@ begin
     end if;
 end process;
 
-txData_Out2 : process(clk,txDone_reg,curState)
+txData_Out2 : process(clk,txDone_reg)
 begin
     if rising_edge(clk) then
             txData <= sending;
             if txDone_reg = '1' then   
                   enSent <=true;  
             elsif curState = ANNN_BYTE_OUT1_DONE then
-                              enSent <=true;  
+                             enSent <=true;  
             elsif curState = ANNN_BYTE_OUT2_DONE then
-                              enSent <=true;  
+                             enSent <=true;  
              else
                   enSent <=false;            
             end if;
