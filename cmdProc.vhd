@@ -73,9 +73,9 @@ function to_ascii(value : std_logic_vector) return std_logic_vector is
     signal nibble1, nibble2: std_logic_vector(3 downto 0):= (others => '0');
     signal peakStore, listStore: std_logic_vector(7 downto 0) := (others => '0');
     
-    signal listCount, ANNN_byteCount,NNN,digitCount,index : integer :=0;
+    signal listCount, ANNN_byteCount,NNN,index : integer :=0;
 
-    signal enSend, enSent, peakStored, listStored, NNNStored,bytes_stored, byte_sent, results_stored, ANNN_end, newNNN : boolean := false;
+    signal enSend, enSent, peakStored, listStored, NNNStored,bytes_stored, byte_sent, results_stored, ANNN_end, NNN_stored : boolean := false;
 
     signal rxnow_reg, txdone_reg, dataReady_reg, seqDone_reg  : std_logic;
     signal maxIndex_reg : BCD_ARRAY_TYPE(2 downto 0) := (others => (others => '0'));
@@ -215,12 +215,10 @@ set_start : process(clk,curState,index,NNN)
 --storing data value inputted on the clock edge
 begin
     if rising_edge(clk) then 
-        if curState=ANNN THEN
-         start<='1'; 
-        elsif curState=ANNN_BYTE_IN then
-                   if index < NNN then
-                                      start<='1'; 
-                   end if;
+        --if curState=ANNN THEN
+        if curState=ANNN_BYTE_IN and index < NNN then
+                 start<='1'; 
+                     bytes_stored<=true; 
         elsif index > NNN-1 then
            start<='0';
            bytes_stored<=true; 
@@ -278,17 +276,26 @@ end process;
 
 SET_ANN_REG : process(clk)
 begin    
-    if rising_edge(clk) then
-              ANNN_reg(digitCount+1) <= data_reg(3 downto 0);
+    if curState  = INIT then
+              ANNN_reg(0) <= "0000";
+               ANNN_reg(1) <= "0000";
+              ANNN_reg(2) <= "0000";
+    elsif curState = AN then
+                  ANNN_reg(2) <= data_reg(3 downto 0);
+        elsif curState = ANN then
+                  ANNN_reg(1) <= data_reg(3 downto 0);
+        elsif curState = ANNN then
+                  ANNN_reg(0) <= data_reg(3 downto 0);
+
     end if;
 end process;
 
 SET_NUMWORDS : process(clk)
 begin    
     if rising_edge(clk) then
-          numwords_bcd(2) <= ANNN_reg(0);
+          numwords_bcd(2) <= ANNN_reg(2);
           numwords_bcd(1) <= ANNN_reg(1);
-          numwords_bcd(0) <= ANNN_reg(2);   
+          numwords_bcd(0) <= ANNN_reg(0);   
     end if;
 end process;
 
@@ -604,28 +611,27 @@ begin
             end if;
 end process; 
 
-  set_digitCount : process(curState)
+
+  set_NNN_stored : process(curState)
 --storing data value inputted on the clock edge
 begin
-            if curState = AN_WAIT  then
-          digitCount <= 0;
-          elsif curState = ANN_WAIT then
-          digitCount <= 1;
-          elsif curState = ANNN then
-          digitCount <= 2;           
-            else
-          digitCount <= 0;           
-            end if;
+        if curState = ANNN then
+            NNN_stored<= true;
+        else
+            NNN_stored<= false;
+        end if;
+        
 end process; 
 
-
-  set_NNN : process(clk)
+  store_NNN : process(NNN_stored)
 --storing data value inputted on the clock edge
 begin
-    if rising_edge(clk) then
-         NNN <= ( (TO_INTEGER(UNSIGNED(ANNN_reg(0)))*100) + (TO_INTEGER(UNSIGNED(ANNN_reg(1)))*10) + (TO_INTEGER(UNSIGNED(ANNN_reg(2)))));  
-
-    end if;
+        if NNN_stored = false and curState = INIT then
+            NNN<=0;
+        else
+         NNN <= ( (TO_INTEGER(UNSIGNED(ANNN_reg(2)))*100) + (TO_INTEGER(UNSIGNED(ANNN_reg(1)))*10) + (TO_INTEGER(UNSIGNED(ANNN_reg(0)))));  
+        end if;
+               
 end process; 
 
   set_NNNStored : process(curState)
