@@ -154,7 +154,7 @@ begin
 end process;
 
 -- process to store each incoming byte on the clock when data is to be read
-store_byte : process(clk)
+store_byte : process(clk,curState,dataReady_reg)
 begin
     if rising_edge(clk) then
     
@@ -177,7 +177,7 @@ begin
     end if;
 end process; 
 
-reg_dataResults : process(clk)
+reg_dataResults : process(clk,seqDone_reg)
 --storing data value inputted on the clock edge
 begin
     if rising_edge(clk) then    
@@ -187,7 +187,7 @@ begin
     end if;
 end process; 
 
-reg_maxIndex : process(clk)
+reg_maxIndex : process(clk,seqDone_reg)
 --storing data value inputted on the clock edge
 begin
     if rising_edge(clk) then   
@@ -197,7 +197,7 @@ begin
     end if;
 end process; 
 
-set_results : process(clk)
+set_results : process(clk,results_stored)
 --storing data value inputted on the clock edge
 begin
     if rising_edge(clk) then
@@ -209,7 +209,7 @@ begin
     end if;
 end process; 
 
-set_start : process(clk)
+set_start : process(clk,curState,index,NNN)
 --storing data value inputted on the clock edge
 begin
     if rising_edge(clk) then 
@@ -229,7 +229,7 @@ begin
     end if;
 end process; 
 
-reg_bytecount : process(clk)
+reg_bytecount : process(clk,curState)
 --storing data value inputted on the clock edge
 begin
     if rising_edge(clk) then
@@ -241,7 +241,7 @@ begin
             end if;
 end process; 
 
-reg_listcount : process(clk)
+reg_listcount : process(clk,curState)
 --storing data value inputted on the clock edge
 begin
     if rising_edge(clk) then
@@ -261,7 +261,7 @@ begin
     end if;
 end process; 
 
-reg_rxdata : process(clk)
+reg_rxdata : process(clk,rxnow_reg)
 --storing data value inputted on the clock edge
 begin
     if rising_edge(clk) then
@@ -290,7 +290,7 @@ begin
     end if;
 end process;
 
-reg_byte : process(clk)
+reg_byte : process(clk,dataReady)
 --storing data value inputted on the clock edge
 begin
     if rising_edge(clk) then
@@ -303,7 +303,7 @@ begin
     end if;
 end process; 
 
-reg_rxnow : process(clk)
+reg_rxnow : process(clk,rxnow_reg)
 begin
     if rising_edge(clk) then
         rxnow_reg <= rxnow;
@@ -312,7 +312,7 @@ end process;
 
   
   
-  combi_nextState: PROCESS(curState, clk)
+  combi_nextState: PROCESS(curState,listCount, clk, data_reg, enSent, rxnow_reg,NNNStored,bytes_stored,seqDone_reg,results_stored,ANNN_end,peakStored)
   BEGIN
     CASE curState IS
       WHEN INIT =>
@@ -617,10 +617,15 @@ begin
 end process; 
 
 
-  set_NNN : process(curState)
+  set_NNN : process(clk)
 --storing data value inputted on the clock edge
 begin
-         NNN <= ( (TO_INTEGER(UNSIGNED(ANNN_reg(0)))*100) + (TO_INTEGER(UNSIGNED(ANNN_reg(1)))*10) + (TO_INTEGER(UNSIGNED(ANNN_reg(2)))));          
+    if rising_edge(clk) then
+         NNN <= ( (TO_INTEGER(UNSIGNED(ANNN_reg(0)))*100) + (TO_INTEGER(UNSIGNED(ANNN_reg(1)))*10) + (TO_INTEGER(UNSIGNED(ANNN_reg(2)))));  
+     else        
+              NNN <= ( (TO_INTEGER(UNSIGNED(ANNN_reg(0)))*100) + (TO_INTEGER(UNSIGNED(ANNN_reg(1)))*10) + (TO_INTEGER(UNSIGNED(ANNN_reg(2)))));  
+
+    end if;
 end process; 
 
   set_NNNStored : process(curState)
@@ -643,76 +648,46 @@ begin
           END IF;
 end process;   
 
-   set_peakStore : process(curState)
+   set_peakStore : process(clk)
+--storing data value inputted on the clock edge
+begin
+    if rising_edge(clk) then
+          peakStore <= dataResults_reg(3); 
+   END IF;
+end process; 
+  
+   set_peakStored : process(curState)
 --storing data value inputted on the clock edge
 begin
          if curState = P  then
-          peakStore <= dataResults_reg(3); 
+          peakStored <= true;
           ELSE
-          peakStore <= dataResults_reg(3); 
+           peakStored <= false;         
           END IF;
 end process; 
-       
-  --processes on fsm states
-state_logic : process(curState, clk)
+
+   set_listStored: process(curState)
+--storing data value inputted on the clock edge
 begin
-    case curState is
-      
-        when P =>
-          peakStore <= dataResults_reg(3); 
-          peakStored <= true;
-
-          when P_BYTE1 =>
-            enSend <= true;           
-            
-          when P_BYTE2 =>
-            enSend <= true;
-            
-           when P_SPACE =>         
-            enSend <= true;
-            
-           when P_INDEX1 =>         
-            enSend <= true;
-            
-         when P_INDEX2 =>         
-            enSend <= true;
-            
-           when P_INDEX3 =>         
-           enSend <= true;
-           
-
-        when LIST_INIT =>
+         if curState = LIST_INIT  then
           listStored <= true;
-                    enSend <= false;
+          ELSE
+           listStored <= false;         
+          END IF;
+end process; 
 
-            
-        when LIST_PRINT1 =>
-                  listStore <= dataResults_reg(listCount);           
-          enSend <= true;
-        
-                when LIST_PRINT1_DONE =>
-           enSend <= false;
-                        
-        when LIST_PRINT2 =>
-           enSend <= true;
-           
-                   when LIST_PRINT2_DONE =>
-           enSend <= false;
-           
-           when LIST_SPACE =>
-           enSend <= true;
-           
-           when LIST_COUNT  =>
-           enSend <= FALSE;                
-                                       
-        when others =>
-            -- do nothing
-    end case;
-end process;
+   set_listStore: process(clk)
+--storing data value inputted on the clock edge
+begin
+    if rising_edge(clk) then
+            listStore <= dataResults_reg(listCount);                
+          END IF;
+end process; 
+     
 
   ----------------output to tx--------------------------
 
-txData_Out : process(clk)
+txData_Out : process(clk,curState,enSent)
 begin
     if rising_edge(clk) then
         if rxnow_reg = '1' then --ADD AND RXNOW='1' BACK IN PLSSSSSSSSSSSSSSSS              
@@ -741,7 +716,7 @@ begin
     end if;
 end process;
 
-txData_Out2 : process(clk)
+txData_Out2 : process(clk,txDone_reg)
 begin
     if rising_edge(clk) then
             txData <= sending;
@@ -753,7 +728,7 @@ begin
     end if;
 end process;
 
-txData_Out3 : process(clk)
+txData_Out3 : process(clk,curState)
 begin
     if rising_edge(clk) then
             if curState = ANNN_BYTE_COUNT or curState = ANNN_DONE_CHECK or curState=ANNN_BYTE_OUT1 or curState=ANNN_BYTE_OUT2 or curState = LIST_COUNT
