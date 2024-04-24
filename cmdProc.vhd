@@ -106,6 +106,42 @@ begin
     end if;
 end process; 
 
+---------------store byte from rx--------------------------
+set_to_be_sent : process(curState)
+--storing data value inputted on the clock edge
+begin
+    if curState= ANNN_BYTE_OUT1 then    
+          to_be_sent <= to_ascii(nibble1);
+          
+     elsif curState= ANNN_BYTE_OUT2   then    
+          to_be_sent <= to_ascii(nibble2);
+          
+     elsif curState= SEND_SPACE or curState = P_SPACE or curState = LIST_SPACE  then    
+          to_be_sent <= space;
+          
+     elsif   curState= P_BYTE1   then    
+          to_be_sent <= to_ascii(peakStore(7 downto 4));
+          
+     elsif   curState= P_BYTE2   then    
+          to_be_sent <= to_ascii(peakStore(3 downto 0));
+             
+      elsif   curState= P_INDEX1   then    
+          to_be_sent <= to_ascii(maxIndex_reg(0));
+           
+                elsif   curState= P_INDEX2   then    
+          to_be_sent <= to_ascii(maxIndex_reg(1));
+          
+                elsif   curState= P_INDEX3   then    
+          to_be_sent <= to_ascii(maxIndex_reg(2));   
+          
+                          elsif   curState= LIST_PRINT1   then    
+          to_be_sent <= to_ascii(listStore(7 downto 4));   
+          
+                          elsif   curState= LIST_PRINT2   then    
+          to_be_sent <= to_ascii(listStore(3 downto 0));   
+          
+    end if;
+end process;
 
 -- process to store each incoming byte on the clock when data is to be read
 store_byte : process(clk)
@@ -242,12 +278,14 @@ end process;
 
 SET_ANN_REG : process(clk)
 begin    
-    if rising_edge(clk) and curState = INIT then
+    if rising_edge(clk) then
+        if curState = INIT then
               ANNN_reg(0) <= "0000";
               ANNN_reg(1) <= "0000";
               ANNN_reg(2) <= "0000";
-    else
+            else
               ANNN_reg(digitCount+1) <= data_reg(3 downto 0);
+            end if;
     end if;
 end process;
 
