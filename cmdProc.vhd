@@ -75,7 +75,7 @@ function to_ascii(value : std_logic_vector) return std_logic_vector is
     
     signal listCount, ANNN_byteCount,NNN,index : integer :=0;
 
-    signal enSend, enSent, peakStored, listStored, NNNStored,bytes_stored, byte_sent, results_stored, ANNN_end, NNN_stored : boolean := false;
+    signal peakStored, listStored, NNNStored,bytes_stored, byte_sent, results_stored, ANNN_end, NNN_stored : boolean := false;
 
     signal rxnow_reg, txdone_reg, dataReady_reg, seqDone_reg  : std_logic;
     signal maxIndex_reg : BCD_ARRAY_TYPE(2 downto 0) := (others => (others => '0'));
@@ -321,7 +321,7 @@ end process;
 
   
   
-  combi_nextState: PROCESS(curState,listCount, clk, data_reg, enSent, rxnow_reg,rxnow,NNNStored,bytes_stored,seqDone_reg,results_stored,ANNN_end,peakStored)
+  combi_nextState: PROCESS(curState,listCount, clk, data_reg, txDone_reg, rxnow_reg,rxnow,NNNStored,bytes_stored,seqDone_reg,results_stored,ANNN_end,peakStored)
   BEGIN
     CASE curState IS
       WHEN INIT =>
@@ -410,42 +410,42 @@ end process;
         
                       
         WHEN ANNN_BYTE_OUT1 =>
-        IF enSent = true THEN 
+        IF txDone_reg = '1' THEN 
             nextState <= ANNN_BYTE_OUT1_DONE;
         ELSE
            nextState <= ANNN_BYTE_OUT1;
         END IF;
         
-                WHEN ANNN_BYTE_OUT1_DONE =>
-        IF enSent = true THEN 
+        WHEN ANNN_BYTE_OUT1_DONE =>
+        IF txDone_reg = '1' THEN 
             nextState <= ANNN_BYTE_OUT2;
         ELSE
            nextState <= ANNN_BYTE_OUT1_DONE;
         END IF;
               
         WHEN ANNN_BYTE_OUT2 =>
-        IF enSent = true THEN 
+        IF txDone_reg = '1' THEN 
             nextState <= ANNN_BYTE_OUT2_DONE;
         ELSE
            nextState <= ANNN_BYTE_OUT2;
         END IF;        
         
                 WHEN ANNN_BYTE_OUT2_DONE =>
-        IF enSent = true THEN 
+        IF txDone_reg = '1' THEN 
             nextState <= SEND_SPACE;
         ELSE
            nextState <= ANNN_BYTE_OUT2_DONE;
         END IF; 
         
                 WHEN SEND_SPACE =>
-        IF enSent = true THEN 
+        IF txDone_reg = '1' THEN 
             nextState <= ANNN_BYTE_COUNT;
         ELSE
            nextState <= SEND_SPACE;
         END IF; 
                 
                  WHEN ANNN_BYTE_COUNT =>
-        IF enSent = true THEN 
+        IF txDone_reg = '1' THEN 
             nextState <= ANNN_DONE_CHECK;
         ELSE
            nextState <= ANNN_DONE_CHECK;
@@ -468,70 +468,70 @@ end process;
              END IF;
              
           WHEN P_BYTE1 =>
-            IF enSent = true THEN 
+            IF txDone_reg = '1' THEN 
                 nextState <= P_BYTE1_DONE;
             ELSE
                nextState <= P_BYTE1_DONE;                
             END IF;
             
                    WHEN P_BYTE1_DONE =>
-            IF enSent = true THEN 
+            IF txDone_reg = '1' THEN 
                 nextState <= P_BYTE2;
             ELSE
                nextState <= P_BYTE1_DONE;                
             END IF;
              
          WHEN P_BYTE2 =>
-            IF enSent = true THEN 
+            IF txDone_reg = '1' THEN 
                 nextState <= P_BYTE2_DONE;
              ELSE
                nextState <= P_BYTE2_DONE;               
              END IF;
              
              WHEN P_BYTE2_DONE =>
-            IF enSent = true THEN 
+            IF txDone_reg = '1' THEN 
                 nextState <= P_SPACE;
             ELSE
                nextState <= P_BYTE2_DONE;                
             END IF;
              
          WHEN P_SPACE =>
-            IF enSent = true THEN 
+            IF txDone_reg = '1' THEN 
                 nextState <= P_INDEX1;
             ELSE
                nextState <= P_SPACE;
              END IF;                     
              
         WHEN P_INDEX1 =>
-            IF enSent = true THEN 
+            IF txDone_reg = '1' THEN 
                 nextState <= P_INDEX1_DONE;
             ELSE
                nextState <= P_INDEX1_DONE;
              END IF; 
              
                  WHEN P_INDEX1_DONE =>
-            IF enSent = true THEN 
+            IF txDone_reg = '1' THEN 
                 nextState <= P_INDEX2;
             ELSE
                nextState <= P_INDEX1_DONE;
              END IF; 
                  
          WHEN P_INDEX2 =>
-            IF enSent = true THEN 
+            IF txDone_reg = '1' THEN 
                 nextState <= P_INDEX3;
             ELSE
                nextState <= P_INDEX2;
              END IF;   
              
                WHEN P_INDEX2_DONE =>
-            IF enSent = true THEN 
+            IF txDone_reg = '1' THEN 
                 nextState <= P_INDEX3;
             ELSE
                nextState <= P_INDEX2_DONE;
              END IF;      
                    
        WHEN P_INDEX3 =>
-            IF enSent = true THEN 
+            IF txDone_reg = '1' THEN 
                 nextState <= INIT;
             ELSE
                nextState <= P_INDEX3;
@@ -546,35 +546,35 @@ end process;
         END IF;
                      
       WHEN LIST_PRINT1 =>
-            IF enSent = true THEN 
+            IF txDone_reg = '1' THEN 
                 nextState <= LIST_PRINT1_DONE;
         ELSE
                 nextState <= LIST_PRINT1_DONE;    
              END IF;
              
              WHEN LIST_PRINT1_DONE =>
-            IF enSent = true THEN 
+            IF txDone_reg = '1' THEN 
                 nextState <= LIST_PRINT2;
         ELSE
                 nextState <= LIST_PRINT1_DONE;    
              END IF;        
         
        WHEN LIST_PRINT2 =>
-            IF enSent = true THEN 
+            IF txDone_reg = '1' THEN 
                 nextState <= LIST_PRINT2_DONE;
            ELSE
                 nextState <= LIST_PRINT2_DONE;
              END IF;
              
                     WHEN LIST_PRINT2_DONE =>
-            IF enSent = true THEN 
+            IF txDone_reg = '1' THEN 
                 nextState <= LIST_SPACE;
            ELSE
                 nextState <= LIST_PRINT2_DONE;
              END IF;
              
             WHEN LIST_SPACE =>
-            IF enSent = true THEN 
+            IF txDone_reg = '1' THEN 
                 nextState <= LIST_COUNT;
         ELSE
                 nextState <= LIST_SPACE;    
@@ -597,21 +597,6 @@ end process;
     END CASE;
   END PROCESS; -- combi_nextState
   -----------------------------------------------------
-  
-  set_enSend : process(curState,clk)
---storing data value inputted on the clock edge
-begin
-    if rising_edge(clk) then
-            if curState = ANNN_BYTE_OUT1 or curState = ANNN_BYTE_OUT2 
-            or curState = SEND_SPACE or curState = P_BYTE1 or curState = P_SPACE
-            or curState = P_INDEX1 or curState = P_INDEX2  or curState = P_INDEX3 
-            or curState = LIST_PRINT1  or curState = LIST_PRINT2   or curState = LIST_SPACE  then
-                enSend<= true;
-            else
-                enSend<= false;           
-            end if;
-        end if;
-end process; 
 
 
   set_NNN_stored : process(curState)
@@ -695,7 +680,7 @@ end process;
 
   ----------------output to tx--------------------------
 
-txData_Out : process(clk,curState,enSent)
+txData_Out : process(clk,curState,txDone_reg)
 begin
     if rising_edge(clk) then
         if rxnow_reg = '1' then --data echoing             
@@ -703,11 +688,8 @@ begin
         elsif (curState = ANNN_BYTE_OUT1 or curState = ANNN_BYTE_OUT2 or 
         curState = LIST_PRINT1 or curState = LIST_PRINT2 or curState = P_BYTE1 or
         curState = P_BYTE2 or curState = P_INDEX1 or curState = P_INDEX2 or
-        curState = P_INDEX3 or curState = SEND_SPACE or curState = LIST_SPACE) and enSent=true then
-            txNow <= '1';  
-             
-             elsif curState = P_INDEX3 and enSent=true then 
-             txNow <= '1'; 
+        curState = P_INDEX3 or curState = SEND_SPACE or curState = LIST_SPACE) then
+            txNow <= '1';             
        else 
           txNow <= '0';        
         end if;      
@@ -718,15 +700,6 @@ txData_Out2 : process(clk,txDone_reg)
 begin
     if rising_edge(clk) then
             txData <= sending;
-            if txDone_reg = '1' then   
-                  enSent <=true;  
-            elsif curState = ANNN_BYTE_OUT1_DONE then
-                             enSent <=true;  
-            elsif curState = ANNN_BYTE_OUT2_DONE then
-                             enSent <=true;  
-             else
-                  enSent <=false;            
-            end if;
     end if;
 end process;
 
