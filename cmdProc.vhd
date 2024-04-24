@@ -104,6 +104,7 @@ begin
     end if;
 end process; 
 
+
 -- process to store each incoming byte on the clock when data is to be read
 store_byte : process(clk)
 begin
@@ -480,11 +481,15 @@ end process;
             WHEN LIST_COUNT =>
             IF enSent = true THEN 
                 nextState <= LIST_PRINT1;
-           ELSE
+           ELSIF listCount > 6 THEN
+                nextState <= INIT;
+           ELSE 
                 nextState <= LIST_PRINT1;
              END IF;
+                         
              
              WHEN others =>
+             
 
         
     END CASE;
@@ -567,12 +572,12 @@ begin
            
 
         when LIST_INIT =>
-          listStore <= dataResults_reg(listCount); 
           listStored <= true;
                     enSend <= false;
 
             
-        when LIST_PRINT1 =>          
+        when LIST_PRINT1 =>
+                  listStore <= dataResults_reg(listCount);           
           to_be_sent <= to_ascii(listStore(3 downto 0));
           enSend <= true;
                         
@@ -599,7 +604,11 @@ begin
         elsif curState = ANNN_BYTE_OUT1 and enSent=true then
             txNow <= '1';                  
         elsif curState = ANNN_BYTE_OUT2 and enSent=true then 
-             txNow <= '1';                   
+             txNow <= '1';    
+         elsif curState = LIST_PRINT1 and enSent=true then 
+             txNow <= '1';
+        elsif curState = LIST_PRINT2 and enSent=true then 
+             txNow <= '1';                        
        else 
           txNow <= '0';        
         end if;      
@@ -621,8 +630,10 @@ end process;
 txData_Out3 : process(clk)
 begin
     if rising_edge(clk) then
-            if curState = ANNN_BYTE_COUNT or curState = ANNN_DONE_CHECK or curState=ANNN_BYTE_OUT1 or curState=ANNN_BYTE_OUT2 or curState= SEND_SPACE or curState = ANNN_BYTE_OUT1_DONE or curState = ANNN_BYTE_OUT2_DONE then   
-                  sending <=to_be_sent;  
+            if curState = ANNN_BYTE_COUNT or curState = ANNN_DONE_CHECK or curState=ANNN_BYTE_OUT1 or curState=ANNN_BYTE_OUT2 or curState = LIST_COUNT
+            or curState= SEND_SPACE or curState = ANNN_BYTE_OUT1_DONE or curState = ANNN_BYTE_OUT2_DONE or curState = LIST_PRINT1 or curState = LIST_PRINT2 then   
+                  sending <=to_be_sent;
+               
             else
                   sending <=data_reg;  
             end if;
