@@ -149,6 +149,8 @@ begin
           
                           elsif   curState= LIST_PRINT2   then    
           to_be_sent <= to_ascii(listStore(3 downto 0));   
+     else
+     to_be_sent<= "00000000";
           
     end if;
 end process;
@@ -277,7 +279,7 @@ end process;
 SET_ANN_REG : process(clk)
 begin    
     if rising_edge(clk) then
-              ANNN_reg(digitCount) <= data_reg(3 downto 0);
+              ANNN_reg(digitCount+1) <= data_reg(3 downto 0);
     end if;
 end process;
 
@@ -303,7 +305,7 @@ begin
     end if;
 end process; 
 
-reg_rxnow : process(clk,rxnow_reg)
+reg_rxnow : process(clk,rxnow_reg,rxnow)
 begin
     if rising_edge(clk) then
         rxnow_reg <= rxnow;
@@ -312,7 +314,7 @@ end process;
 
   
   
-  combi_nextState: PROCESS(curState,listCount, clk, data_reg, enSent, rxnow_reg,NNNStored,bytes_stored,seqDone_reg,results_stored,ANNN_end,peakStored)
+  combi_nextState: PROCESS(curState,listCount, clk, data_reg, enSent, rxnow_reg,rxnow,NNNStored,bytes_stored,seqDone_reg,results_stored,ANNN_end,peakStored)
   BEGIN
     CASE curState IS
       WHEN INIT =>
@@ -622,8 +624,6 @@ end process;
 begin
     if rising_edge(clk) then
          NNN <= ( (TO_INTEGER(UNSIGNED(ANNN_reg(0)))*100) + (TO_INTEGER(UNSIGNED(ANNN_reg(1)))*10) + (TO_INTEGER(UNSIGNED(ANNN_reg(2)))));  
-     else        
-              NNN <= ( (TO_INTEGER(UNSIGNED(ANNN_reg(0)))*100) + (TO_INTEGER(UNSIGNED(ANNN_reg(1)))*10) + (TO_INTEGER(UNSIGNED(ANNN_reg(2)))));  
 
     end if;
 end process; 
