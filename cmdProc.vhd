@@ -367,7 +367,7 @@ end process;
         IF enSent = true THEN 
             topNextState <= ANNN_BYTE_OUT2;
         ELSE
-           topNextState <= ANNN_BYTE_OUT2;
+           topNextState <= ANNN_BYTE_OUT1_DONE;
         END IF;
               
         WHEN ANNN_BYTE_OUT2 =>
@@ -489,6 +489,7 @@ begin
         
         when ANNN_BYTE_IN   =>            
           enSend <=false;
+                    to_be_sent <= to_ascii(nibble1); 
           byte_sent <= false;
           
           
@@ -499,6 +500,7 @@ begin
 
         
          when ANNN_BYTE_OUT1_DONE  =>
+                   to_be_sent <= to_ascii(nibble2); 
           enSend <= false;
          
         when ANNN_BYTE_OUT2  =>
@@ -508,6 +510,7 @@ begin
           
         when ANNN_DONE_CHECK => 
                   enSend <= FALSE;
+          to_be_sent <= to_ascii(nibble1); 
 
             if ANNN_byteCount > NNN-1 then
                 ANNN_end<= true;
