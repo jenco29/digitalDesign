@@ -60,7 +60,9 @@ function to_ascii(value : std_logic_vector) return std_logic_vector is
  end function;
 
 -- State declaration for main FSM
-  TYPE state_type IS (INIT, DATA_ECHO, INIT_BYTE, A, A_WAIT, AN, AN_WAIT, ANN, ANN_WAIT, ANNN, ANNN_BYTE_IN,ANNN_BYTE_OUT1_DONE,ANNN_BYTE_OUT2_DONE,SEND_SPACE, ANNN_DONE_CHECK, SEQ_DONE,ANNN_BYTE_COUNT, ANNN_BYTE_OUT1, ANNN_BYTE_OUT2, ANNN_DONE ,P, P_BYTE1, P_BYTE2, P_SPACE, P_INDEX1,P_INDEX2,P_INDEX3, LIST_INIT, LIST_PRINT1, LIST_PRINT2, LIST_COUNT);  -- List your states here 	
+  TYPE state_type IS (INIT, DATA_ECHO, INIT_BYTE, A, A_WAIT, AN, AN_WAIT, ANN, ANN_WAIT, ANNN, ANNN_BYTE_IN,ANNN_BYTE_OUT1_DONE,
+  ANNN_BYTE_OUT2_DONE,SEND_SPACE, ANNN_DONE_CHECK, SEQ_DONE,ANNN_BYTE_COUNT, ANNN_BYTE_OUT1, ANNN_BYTE_OUT2, ANNN_DONE ,P, P_BYTE1, P_BYTE2, 
+  P_SPACE, P_INDEX1,P_INDEX2,P_INDEX3, LIST_INIT, LIST_PRINT1, LIST_PRINT1_DONE,LIST_SPACE, LIST_PRINT2, LIST_PRINT2_DONE, LIST_COUNT);  -- List your states here 	
   SIGNAL curState, nextState: state_type;
     
     signal data_reg, byte_reg: std_logic_vector(7 downto 0);   -- data_reg: register to synchronously store byte from rx
@@ -466,22 +468,43 @@ end process;
                      
       WHEN LIST_PRINT1 =>
             IF enSent = true THEN 
+                nextState <= LIST_PRINT1_DONE;
+        ELSE
+                nextState <= LIST_PRINT1_DONE;    
+             END IF;
+             
+             WHEN LIST_PRINT1_DONE =>
+            IF enSent = true THEN 
                 nextState <= LIST_PRINT2;
         ELSE
-                nextState <= LIST_PRINT1;    
-             END IF;
+                nextState <= LIST_PRINT1_DONE;    
+             END IF;        
         
        WHEN LIST_PRINT2 =>
             IF enSent = true THEN 
-                nextState <= LIST_COUNT;
+                nextState <= LIST_PRINT2_DONE;
            ELSE
-                nextState <= LIST_PRINT2;
+                nextState <= LIST_PRINT2_DONE;
+             END IF;
+             
+                    WHEN LIST_PRINT2_DONE =>
+            IF enSent = true THEN 
+                nextState <= LIST_SPACE;
+           ELSE
+                nextState <= LIST_PRINT2_DONE;
+             END IF;
+             
+            WHEN LIST_SPACE =>
+            IF enSent = true THEN 
+                nextState <= LIST_COUNT;
+        ELSE
+                nextState <= LIST_SPACE;    
              END IF;
       
             WHEN LIST_COUNT =>
-            IF enSent = true THEN 
-                nextState <= LIST_PRINT1;
-           ELSIF listCount > 6 THEN
+            --IF enSent = true THEN 
+               -- nextState <= LIST_PRINT1;
+           IF listCount > 6 THEN
                 nextState <= INIT;
            ELSE 
                 nextState <= LIST_PRINT1;
@@ -578,15 +601,24 @@ begin
             
         when LIST_PRINT1 =>
                   listStore <= dataResults_reg(listCount);           
-          to_be_sent <= to_ascii(listStore(3 downto 0));
+          to_be_sent <= to_ascii(listStore(7 downto 4));
           enSend <= true;
+        
+                when LIST_PRINT1_DONE =>
+           enSend <= false;
                         
         when LIST_PRINT2 =>
-           to_be_sent <= to_ascii(listStore(7 downto 4));
+           to_be_sent <= to_ascii(listStore(3 downto 0));
+           enSend <= true;
+           
+                   when LIST_PRINT2_DONE =>
+           enSend <= false;
+           
+           when LIST_SPACE =>
+           to_be_sent <= space;
            enSend <= true;
            
            when LIST_COUNT  =>
-           to_be_sent <= to_ascii(listStore(7 downto 4));
            enSend <= FALSE;                
                                        
         when others =>
@@ -631,7 +663,8 @@ txData_Out3 : process(clk)
 begin
     if rising_edge(clk) then
             if curState = ANNN_BYTE_COUNT or curState = ANNN_DONE_CHECK or curState=ANNN_BYTE_OUT1 or curState=ANNN_BYTE_OUT2 or curState = LIST_COUNT
-            or curState= SEND_SPACE or curState = ANNN_BYTE_OUT1_DONE or curState = ANNN_BYTE_OUT2_DONE or curState = LIST_PRINT1 or curState = LIST_PRINT2 then   
+            or curState= SEND_SPACE or curState = ANNN_BYTE_OUT1_DONE or curState = ANNN_BYTE_OUT2_DONE or curState = LIST_PRINT1 or curState = LIST_PRINT2
+            or curState= LIST_PRINT1_DONE or curState= LIST_PRINT2_DONE or curState= LIST_SPACE then   
                   sending <=to_be_sent;
                
             else
