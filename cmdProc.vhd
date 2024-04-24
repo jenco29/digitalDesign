@@ -75,7 +75,7 @@ function to_ascii(value : std_logic_vector) return std_logic_vector is
     
     signal listCount, ANNN_byteCount,NNN,digitCount,index : integer :=0;
 
-    signal enSend, enSent, peakStored, listStored, NNNStored,bytes_stored, byte_sent, byte_done, results_stored, ANNN_end : boolean := false;
+    signal enSend, enSent, peakStored, listStored, NNNStored,bytes_stored, byte_sent, results_stored, ANNN_end : boolean := false;
 
     signal rxnow_reg, txdone_reg, dataReady_reg, seqDone_reg  : std_logic;
     signal maxIndex_reg : BCD_ARRAY_TYPE(2 downto 0) := (others => (others => '0'));
@@ -106,8 +106,18 @@ begin
     end if;
 end process; 
 
+set_annn_end : process(curState, ANNN_byteCount,NNN)
+--storing data value inputted on the clock edge
+begin
+            if curState = ANNN_DONE_CHECK and ANNN_byteCount > NNN-1 then
+                ANNN_end<= true;
+            else
+                ANNN_end<= false;           
+            end if;
+end process; 
+
 ---------------store byte from rx--------------------------
-set_to_be_sent : process(curState)
+set_to_be_sent : process(curState, nibble1,nibble2,listStore,peakStore,maxIndex_reg)
 --storing data value inputted on the clock edge
 begin
     if curState= ANNN_BYTE_OUT1 then    
@@ -243,18 +253,6 @@ begin
             end if;
 end process; 
 
-byteDone : process(clk)
---storing data value inputted on the clock edge
-begin
-    if rising_edge(clk)THEN
-        IF index>NNN-1 then    
-                   byte_done<=true;
-        ELSE
-                        byte_done<=false;
-            end if;
-   END IF;
-end process; 
-
 reg_seqDone : process(clk)
 --storing data value inputted on the clock edge
 begin
@@ -328,9 +326,7 @@ end process;
                   nextState <= INIT_BYTE;
         ELSE
                   nextState <= INIT;
-                  
-                
-
+                              
         END IF;
         
          WHEN INIT_BYTE =>
@@ -582,8 +578,7 @@ end process;
              END IF;
       
             WHEN LIST_COUNT =>
-            --IF enSent = true THEN 
-               -- nextState <= LIST_PRINT1;
+
            IF listCount > 6 THEN
                 nextState <= INIT;
            ELSE 
@@ -592,25 +587,48 @@ end process;
                          
              
              WHEN others =>
-             
+                nextState <= INIT;
+                    
 
         
     END CASE;
   END PROCESS; -- combi_nextState
   -----------------------------------------------------
   
+  set_enSend : process(curState)
+--storing data value inputted on the clock edge
+begin
+            if curState = ANNN_BYTE_OUT1 or curState = ANNN_BYTE_OUT2 
+            or curState = SEND_SPACE or curState = P_BYTE1 or curState = P_SPACE
+            or curState = P_INDEX1 or curState = P_INDEX2  or curState = P_INDEX3 
+            or curState = LIST_PRINT1  or curState = LIST_PRINT2   or curState = LIST_SPACE  then
+                enSend<= true;
+            else
+                enSend<= false;           
+            end if;
+end process; 
+
+  set_digitCount : process(curState)
+--storing data value inputted on the clock edge
+begin
+            if curState = AN_WAIT  then
+          digitCount <= 0;
+          elsif curState = ANN_WAIT then
+          digitCount <= 1;
+          elsif curState = ANN_WAIT then
+          digitCount <= 1;           
+            else
+                enSend<= false;           
+            end if;
+end process; 
   --processes on fsm states
 state_logic : process(curState, clk)
 begin
     case curState is
-        
-        when INIT =>
-                ANNN_end<= false;
-
-
-        when A => 
-          
+                 
         when AN_WAIT => 
+          enSend <=false;
+        
           digitCount <= 0;
                         
           
@@ -628,49 +646,38 @@ begin
           byte_sent <= false;
 
         when ANNN_BYTE_OUT1  =>
-          to_be_sent <= to_ascii(nibble1); 
           enSend <= true;
          
         when ANNN_BYTE_OUT2  =>
-          to_be_sent <= to_ascii(nibble2); 
           enSend <= true;
           
           when SEND_SPACE  =>
-          to_be_sent <= space; 
           enSend <= true;
           byte_sent <= true;
           
         when ANNN_DONE_CHECK => 
-            if ANNN_byteCount > NNN-1 then
-                ANNN_end<= true;
-            end if;
+
         
         when P =>
           peakStore <= dataResults_reg(3); 
           peakStored <= true;
 
           when P_BYTE1 =>
-           to_be_sent <= to_ascii(peakStore(7 downto 4));           
             enSend <= true;           
             
           when P_BYTE2 =>
-           to_be_sent <= to_ascii(peakStore(3 downto 0));                    
             enSend <= true;
             
            when P_SPACE =>         
-           to_be_sent <= space;          
             enSend <= true;
             
            when P_INDEX1 =>         
-           to_be_sent <= to_ascii(maxIndex_reg(0));          
             enSend <= true;
             
          when P_INDEX2 =>         
-            to_be_sent <= to_ascii(maxIndex_reg(1));          
             enSend <= true;
             
            when P_INDEX3 =>         
-            to_be_sent <= to_ascii(maxIndex_reg(2));
            enSend <= true;
            
 
@@ -681,21 +688,18 @@ begin
             
         when LIST_PRINT1 =>
                   listStore <= dataResults_reg(listCount);           
-          to_be_sent <= to_ascii(listStore(7 downto 4));
           enSend <= true;
         
                 when LIST_PRINT1_DONE =>
            enSend <= false;
                         
         when LIST_PRINT2 =>
-           to_be_sent <= to_ascii(listStore(3 downto 0));
            enSend <= true;
            
                    when LIST_PRINT2_DONE =>
            enSend <= false;
            
            when LIST_SPACE =>
-           to_be_sent <= space;
            enSend <= true;
            
            when LIST_COUNT  =>
