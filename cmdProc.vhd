@@ -506,20 +506,12 @@ begin
           to_be_sent <= to_ascii(nibble2); 
           enSend <= true;
           
-                  
-        when ANNN_BYTE_OUT1_DONE   =>            
-          enSend <=false;
-         
-        when ANNN_BYTE_OUT2_DONE  =>
-          enSend <= false;
-          
           when SEND_SPACE  =>
           to_be_sent <= space; 
           enSend <= true;
           byte_sent <= true;
           
         when ANNN_DONE_CHECK => 
-            enSend <=false;
             if ANNN_byteCount > NNN-1 then
                 ANNN_end<= true;
             end if;
@@ -578,7 +570,7 @@ end process;
 txData_Out : process(clk)
 begin
     if rising_edge(clk) then
-        if (rxnow_reg = '1' and (curState /= ANNN_BYTE_OUT1 OR curState /= ANNN_BYTE_OUT2 or curState /= ANNN_BYTE_OUT2_DONE OR curState /= ANNN_BYTE_OUT1_DONE))  then --ADD AND RXNOW='1' BACK IN PLSSSSSSSSSSSSSSSS              
+        if rxnow_reg = '1' then --ADD AND RXNOW='1' BACK IN PLSSSSSSSSSSSSSSSS              
             txNow <= '1';
         elsif curState = ANNN_BYTE_OUT1 and enSent=true then
             txNow <= '1';                  
@@ -605,7 +597,7 @@ end process;
 txData_Out3 : process(clk)
 begin
     if rising_edge(clk) then
-            if curState = ANNN_BYTE_COUNT or curState=ANNN_BYTE_OUT1 or curState=ANNN_BYTE_OUT2 or curState= SEND_SPACE or curState = ANNN_BYTE_OUT1_DONE or curState = ANNN_BYTE_OUT2_DONE then   
+            if curState = ANNN_BYTE_COUNT or curState = ANNN_DONE_CHECK or curState=ANNN_BYTE_OUT1 or curState=ANNN_BYTE_OUT2 or curState= SEND_SPACE or curState = ANNN_BYTE_OUT1_DONE or curState = ANNN_BYTE_OUT2_DONE then   
                   sending <=to_be_sent;  
             else
                   sending <=data_reg;  
