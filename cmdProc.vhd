@@ -696,25 +696,15 @@ end process;
 txData_Out : process(clk,curState,enSent)
 begin
     if rising_edge(clk) then
-        if rxnow_reg = '1' then --ADD AND RXNOW='1' BACK IN PLSSSSSSSSSSSSSSSS              
+        if rxnow_reg = '1' then --data echoing             
             txNow <= '1';
-        elsif curState = ANNN_BYTE_OUT1 and enSent=true then
-            txNow <= '1';                  
-        elsif curState = ANNN_BYTE_OUT2 and enSent=true then 
-             txNow <= '1';    
-         elsif curState = LIST_PRINT1 and enSent=true then 
-             txNow <= '1';
-        elsif curState = LIST_PRINT2 and enSent=true then 
-             txNow <= '1';                        
-                 elsif curState = P_BYTE1 and enSent=true then 
-             txNow <= '1';
-        elsif curState = P_BYTE2 and enSent=true then 
-             txNow <= '1';   
-                 elsif curState = P_INDEX1 and enSent=true then 
-             txNow <= '1'; 
-                     elsif curState = P_INDEX2 and enSent=true then 
-             txNow <= '1'; 
-                     elsif curState = P_INDEX3 and enSent=true then 
+        elsif (curState = ANNN_BYTE_OUT1 or curState = ANNN_BYTE_OUT2 or 
+        curState = LIST_PRINT1 or curState = LIST_PRINT2 or curState = P_BYTE1 or
+        curState = P_BYTE2 or curState = P_INDEX1 or curState = P_INDEX2 or
+        curState = P_INDEX3) and enSent=true then
+            txNow <= '1';  
+             
+             elsif curState = P_INDEX3 and enSent=true then 
              txNow <= '1'; 
        else 
           txNow <= '0';        
