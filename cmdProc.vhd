@@ -60,8 +60,8 @@ function to_ascii(value : std_logic_vector) return std_logic_vector is
  end function;
 
 -- State declaration for main FSM
-  TYPE state_type IS (INIT, DATA_ECHO, INIT_BYTE, A, A_WAIT, AN, AN_WAIT, ANN, ANN_WAIT, ANNN, ANNN_BYTE_IN,ANNN_BYTE_OUT1_DONE,ANNN_BYTE_OUT2_DONE, ANNN_DONE_CHECK, SEQ_DONE,ANNN_BYTE_COUNT, ANNN_BYTE_OUT1, ANNN_BYTE_OUT2, ANNN_DONE ,P, P_BYTE1, P_BYTE2, P_SPACE, P_INDEX1,P_INDEX2,P_INDEX3, LIST_INIT, LIST_PRINT1, LIST_PRINT2);  -- List your states here 	
-  SIGNAL topCurState, topNextState: state_type;
+  TYPE state_type IS (INIT, DATA_ECHO, INIT_BYTE, A, A_WAIT, AN, AN_WAIT, ANN, ANN_WAIT, ANNN, ANNN_BYTE_IN,ANNN_BYTE_OUT1_DONE,ANNN_BYTE_OUT2_DONE,SEND_SPACE, ANNN_DONE_CHECK, SEQ_DONE,ANNN_BYTE_COUNT, ANNN_BYTE_OUT1, ANNN_BYTE_OUT2, ANNN_DONE ,P, P_BYTE1, P_BYTE2, P_SPACE, P_INDEX1,P_INDEX2,P_INDEX3, LIST_INIT, LIST_PRINT1, LIST_PRINT2);  -- List your states here 	
+  SIGNAL curState, nextState: state_type;
     
     signal data_reg, byte_reg: std_logic_vector(7 downto 0);   -- data_reg: register to synchronously store byte from rx
 
@@ -155,9 +155,9 @@ set_start : process(clk)
 --storing data value inputted on the clock edge
 begin
     if rising_edge(clk) then 
-        if topCurState=ANNN THEN
+        if curState=ANNN THEN
          start<='1'; 
-        elsif topCurState=ANNN_BYTE_IN then
+        elsif curState=ANNN_BYTE_IN then
                    if index < NNN then
                                       start<='1'; 
                    end if;
@@ -174,7 +174,7 @@ end process;
 reg_bytecount : process(clk)
 --storing data value inputted on the clock edge
 begin
-    if rising_edge(clk)and topCurState=ANNN_BYTE_COUNT then    
+    if rising_edge(clk)and curState=ANNN_BYTE_COUNT then    
                    ANNN_byteCount <= ANNN_byteCount +1;
             end if;
 end process; 
@@ -214,7 +214,7 @@ end process;
 
 SET_ANN_REG : process(clk)
 begin    
-    if rising_edge(clk) and topCurState = INIT then
+    if rising_edge(clk) and curState = INIT then
               ANNN_reg(0) <= "0000";
               ANNN_reg(1) <= "0000";
               ANNN_reg(2) <= "0000";
@@ -254,206 +254,213 @@ end process;
 
   
   
-  combi_topNextState: PROCESS(topCurState, clk)
+  combi_nextState: PROCESS(curState, clk)
   BEGIN
-    CASE topCurState IS
+    CASE curState IS
       WHEN INIT =>
         IF rxnow_reg = '1' THEN 
-                  topNextState <= INIT_BYTE;
+                  nextState <= INIT_BYTE;
         ELSE
-                  topNextState <= INIT;
+                  nextState <= INIT;
 
         END IF;
         
          WHEN INIT_BYTE =>
         IF data_reg = lowera or data_reg = uppera THEN 
-          topNextState <= A;
+          nextState <= A;
         ELSIF data_reg = lowerp or data_reg = upperp THEN 
-          topNextState <= P;
+          nextState <= P;
         ELSIF data_reg = lowerl or data_reg = upperl THEN 
-          topNextState <= LIST_INIT;
+          nextState <= LIST_INIT;
         ELSE
-          topNextState <= INIT;
+          nextState <= INIT;
         END IF;
 
         
         
       WHEN A =>
         IF (data_reg(7 downto 4) = num_ascii) and (rxNow_reg='1') and ((TO_INTEGER(UNSIGNED(data_reg))) > 47) and ((TO_INTEGER(UNSIGNED(data_reg))) < 58) THEN 
-            topNextState <= A_WAIT;
+            nextState <= A_WAIT;
         ELSE 
-            topNextState <= A;
+            nextState <= A;
         END IF;
         
          WHEN A_WAIT =>
         IF (data_reg(7 downto 4) = num_ascii) and (rxNow_reg='0') and ((TO_INTEGER(UNSIGNED(data_reg))) > 47) and ((TO_INTEGER(UNSIGNED(data_reg))) < 58) THEN 
-            topNextState <= AN;
+            nextState <= AN;
         ELSE
-            topNextState <= A_WAIT;
+            nextState <= A_WAIT;
         END IF;
              
               WHEN AN =>
         IF (data_reg(7 downto 4) = num_ascii) and (rxNow_reg='1') and ((TO_INTEGER(UNSIGNED(data_reg))) > 47) and ((TO_INTEGER(UNSIGNED(data_reg))) < 58) THEN 
-            topNextState <= AN_WAIT;
+            nextState <= AN_WAIT;
         ELSE
-            topNextState <= AN;
+            nextState <= AN;
         END IF;
  
           WHEN AN_WAIT =>
         IF (data_reg(7 downto 4) = num_ascii) and (rxNow_reg='0') and ((TO_INTEGER(UNSIGNED(data_reg))) > 47) and ((TO_INTEGER(UNSIGNED(data_reg))) < 58) THEN 
-            topNextState <= ANN;
+            nextState <= ANN;
         ELSE
-            topNextState <= AN_WAIT;
+            nextState <= AN_WAIT;
         END IF;
                              
             WHEN ANN =>
         IF (data_reg(7 downto 4) = num_ascii) and (rxNow_reg='1')and ((TO_INTEGER(UNSIGNED(data_reg))) > 47) and ((TO_INTEGER(UNSIGNED(data_reg))) < 58) THEN 
-            topNextState <= ANN_WAIT;
+            nextState <= ANN_WAIT;
         ELSE
-            topNextState <= ANN;
+            nextState <= ANN;
         END IF;
  
           WHEN ANN_WAIT =>
         IF (data_reg(7 downto 4) = num_ascii) and (rxNow_reg='0') and ((TO_INTEGER(UNSIGNED(data_reg))) > 47) and ((TO_INTEGER(UNSIGNED(data_reg))) < 58) THEN 
-            topNextState <= ANNN;
+            nextState <= ANNN;
         ELSE
-            topNextState <= ANN_WAIT;
+            nextState <= ANN_WAIT;
         END IF;
                       
          WHEN ANNN =>
         IF NNNStored = true THEN 
-            topNextState <= ANNN_BYTE_IN;
+            nextState <= ANNN_BYTE_IN;
         ELSE
-            topNextState <= ANNN;
+            nextState <= ANNN;
         END IF;
                       
         WHEN ANNN_BYTE_IN =>
         IF bytes_stored = true and seqDone_reg='1' THEN 
-            topNextState <= SEQ_DONE;
+            nextState <= SEQ_DONE;
         ELSE
-           topNextState <= ANNN_BYTE_IN;
+           nextState <= ANNN_BYTE_IN;
         END IF;
         
                 WHEN SEQ_DONE =>
         IF results_stored = true THEN 
-            topNextState <= ANNN_BYTE_OUT1;
+            nextState <= ANNN_BYTE_OUT1;
         ELSE
-           topNextState <= SEQ_DONE;
+           nextState <= SEQ_DONE;
         END IF;
         
                       
         WHEN ANNN_BYTE_OUT1 =>
         IF enSent = true THEN 
-            topNextState <= ANNN_BYTE_OUT1_DONE;
+            nextState <= ANNN_BYTE_OUT1_DONE;
         ELSE
-           topNextState <= ANNN_BYTE_OUT1_DONE;
+           nextState <= ANNN_BYTE_OUT1_DONE;
         END IF;
         
                 WHEN ANNN_BYTE_OUT1_DONE =>
         IF enSent = true THEN 
-            topNextState <= ANNN_BYTE_OUT2;
+            nextState <= ANNN_BYTE_OUT2;
         ELSE
-           topNextState <= ANNN_BYTE_OUT1_DONE;
+           nextState <= ANNN_BYTE_OUT1_DONE;
         END IF;
               
         WHEN ANNN_BYTE_OUT2 =>
         IF enSent = true THEN 
-            topNextState <= ANNN_BYTE_OUT2_DONE;
+            nextState <= ANNN_BYTE_OUT2_DONE;
         ELSE
-           topNextState <= ANNN_BYTE_OUT2_DONE;
+           nextState <= ANNN_BYTE_OUT2_DONE;
         END IF;        
         
                 WHEN ANNN_BYTE_OUT2_DONE =>
         IF enSent = true THEN 
-            topNextState <= ANNN_BYTE_COUNT;
+            nextState <= SEND_SPACE;
         ELSE
-           topNextState <= ANNN_BYTE_OUT2_DONE;
+           nextState <= ANNN_BYTE_OUT2_DONE;
         END IF; 
         
+                WHEN SEND_SPACE =>
+        IF enSent = true THEN 
+            nextState <= ANNN_BYTE_COUNT;
+        ELSE
+           nextState <= SEND_SPACE;
+        END IF; 
+                
                  WHEN ANNN_BYTE_COUNT =>
         IF enSent = true THEN 
-            topNextState <= ANNN_DONE_CHECK;
+            nextState <= ANNN_DONE_CHECK;
         ELSE
-           topNextState <= ANNN_DONE_CHECK;
+           nextState <= ANNN_DONE_CHECK;
         END IF;
                   
         
         WHEN ANNN_DONE_CHECK =>
         IF ANNN_end=true THEN
-            topNextState <= INIT;
+            nextState <= INIT;
             ELSE
-            topNextState <= ANNN_BYTE_OUT1;
+            nextState <= ANNN_BYTE_OUT1;
         END IF;
              
              
          WHEN P =>
             IF peakStored = true THEN 
-                topNextState <= P_BYTE1;
+                nextState <= P_BYTE1;
             ELSE
-               topNextState <= P;
+               nextState <= P;
              END IF;
              
           WHEN P_BYTE1 =>
             IF enSent = true THEN 
-                topNextState <= P_BYTE2;
+                nextState <= P_BYTE2;
             ELSE
-               topNextState <= P_BYTE1;                
+               nextState <= P_BYTE1;                
             END IF;
              
          WHEN P_BYTE2 =>
             IF enSent = true THEN 
-                topNextState <= P_SPACE;
+                nextState <= P_SPACE;
              ELSE
-               topNextState <= P_BYTE2;               
+               nextState <= P_BYTE2;               
              END IF;
              
          WHEN P_SPACE =>
             IF enSent = true THEN 
-                topNextState <= INIT;
+                nextState <= INIT;
             ELSE
-               topNextState <= P_SPACE;
+               nextState <= P_SPACE;
              END IF;                     
              
         WHEN P_INDEX1 =>
             IF enSent = true THEN 
-                topNextState <= P_INDEX2;
+                nextState <= P_INDEX2;
             ELSE
-               topNextState <= P_INDEX2;
+               nextState <= P_INDEX2;
              END IF; 
              
          WHEN P_INDEX2 =>
             IF enSent = true THEN 
-                topNextState <= P_INDEX3;
+                nextState <= P_INDEX3;
             ELSE
-               topNextState <= P_INDEX2;
+               nextState <= P_INDEX2;
              END IF;        
                    
        WHEN P_INDEX3 =>
             IF enSent = true THEN 
-                topNextState <= INIT;
+                nextState <= INIT;
             ELSE
-               topNextState <= P_INDEX3;
+               nextState <= P_INDEX3;
              END IF; 
         
        WHEN LIST_INIT =>
         IF listCount = 7 THEN 
-          topNextState <= INIT;
+          nextState <= INIT;
         ELSE
-          topNextState <= LIST_PRINT1;      
+          nextState <= LIST_PRINT1;      
         END IF;
                      
       WHEN LIST_PRINT1 =>
             IF enSent = true THEN 
-                topNextState <= LIST_PRINT2;
+                nextState <= LIST_PRINT2;
         ELSE
-                topNextState <= LIST_PRINT1;    
+                nextState <= LIST_PRINT1;    
              END IF;
         
        WHEN LIST_PRINT2 =>
             IF enSent = true THEN 
-                topNextState <= LIST_INIT;
+                nextState <= LIST_INIT;
            ELSE
-                topNextState <= LIST_PRINT2;
+                nextState <= LIST_PRINT2;
              END IF;
              
              WHEN others =>
@@ -464,9 +471,9 @@ end process;
   -----------------------------------------------------
   
   --processes on fsm states
-state_logic : process(topCurState, clk)
+state_logic : process(curState, clk)
 begin
-    case topCurState is
+    case curState is
         
         when INIT =>
                 ANNN_end<= false;
@@ -497,6 +504,10 @@ begin
          
         when ANNN_BYTE_OUT2  =>
           to_be_sent <= to_ascii(nibble2); 
+          enSend <= true;
+          
+          when SEND_SPACE  =>
+          to_be_sent <= space; 
           enSend <= true;
           byte_sent <= true;
           
@@ -559,11 +570,11 @@ end process;
 txData_Out : process(clk)
 begin
     if rising_edge(clk) then
-        if rxnow_reg = '1'  then --ADD AND RXNOW='1' BACK IN PLSSSSSSSSSSSSSSSS              
+        if (rxnow_reg = '1' and (curState /= ANNN_BYTE_OUT1 or curState /= ANNN_BYTE_OUT2 or curState /= ANNN_BYTE_OUT2_DONE OR curState /= ANNN_BYTE_OUT1_DONE))  then --ADD AND RXNOW='1' BACK IN PLSSSSSSSSSSSSSSSS              
             txNow <= '1';
-        elsif topCurState = ANNN_BYTE_OUT1 and enSent=true then
+        elsif curState = ANNN_BYTE_OUT1 and enSent=true then
             txNow <= '1';                  
-        elsif topCurState = ANNN_BYTE_OUT2 and enSent=true then 
+        elsif curState = ANNN_BYTE_OUT2 and enSent=true then 
              txNow <= '1';                   
        else 
           txNow <= '0';        
@@ -586,7 +597,7 @@ end process;
 txData_Out3 : process(clk)
 begin
     if rising_edge(clk) then
-            if topCurState = ANNN_BYTE_COUNT  or topCurState = ANNN_BYTE_OUT1_DONE or topCurState = ANNN_BYTE_OUT2_DONE then   
+            if curState = ANNN_BYTE_COUNT  or curState= SEND_SPACE or curState = ANNN_BYTE_OUT1_DONE or curState = ANNN_BYTE_OUT2_DONE then   
                   sending <=to_be_sent;  
             else
                   sending <=data_reg;  
@@ -599,9 +610,9 @@ end process;
 next_state_seq : process(clk, reset)
 begin
     if reset = '1' then
-        topCurState <= INIT;
+        curState <= INIT;
     elsif rising_edge(clk) then
-        topCurState <= topNextState;
+        curState <= nextState;
     end if;
 end process;
 
