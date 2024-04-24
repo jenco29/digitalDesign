@@ -597,7 +597,7 @@ end process;
 txData_Out3 : process(clk)
 begin
     if rising_edge(clk) then
-            if curState = ANNN_BYTE_COUNT  or curState= SEND_SPACE or curState = ANNN_BYTE_OUT1_DONE or curState = ANNN_BYTE_OUT2_DONE then   
+            if curState = ANNN_BYTE_COUNT or curState=ANNN_BYTE_OUT1 or curState=ANNN_BYTE_OUT2 or curState= SEND_SPACE or curState = ANNN_BYTE_OUT1_DONE or curState = ANNN_BYTE_OUT2_DONE then   
                   sending <=to_be_sent;  
             else
                   sending <=data_reg;  
