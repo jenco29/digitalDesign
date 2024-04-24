@@ -60,7 +60,7 @@ function to_ascii(value : std_logic_vector) return std_logic_vector is
  end function;
 
 -- State declaration for main FSM
-  TYPE state_type IS (INIT, DATA_ECHO, INIT_BYTE, A, A_WAIT, AN, AN_WAIT, ANN, ANN_WAIT, ANNN,ANNN_BYTE_OUT1_DONE, ANNN_BYTE_IN, ANNN_DONE_CHECK, SEQ_DONE,ANNN_BYTE_COUNT, ANNN_BYTE_OUT1, ANNN_BYTE_OUT2, ANNN_DONE ,P, P_BYTE1, P_BYTE2, P_SPACE, P_INDEX1,P_INDEX2,P_INDEX3, LIST_INIT, LIST_PRINT1, LIST_PRINT2);  -- List your states here 	
+  TYPE state_type IS (INIT, DATA_ECHO, INIT_BYTE, A, A_WAIT, AN, AN_WAIT, ANN, ANN_WAIT, ANNN, ANNN_BYTE_IN,ANNN_BYTE_OUT1_DONE,ANNN_BYTE_OUT2_DONE, ANNN_DONE_CHECK, SEQ_DONE,ANNN_BYTE_COUNT, ANNN_BYTE_OUT1, ANNN_BYTE_OUT2, ANNN_DONE ,P, P_BYTE1, P_BYTE2, P_SPACE, P_INDEX1,P_INDEX2,P_INDEX3, LIST_INIT, LIST_PRINT1, LIST_PRINT2);  -- List your states here 	
   SIGNAL topCurState, topNextState: state_type;
     
     signal data_reg, byte_reg: std_logic_vector(7 downto 0);   -- data_reg: register to synchronously store byte from rx
@@ -71,9 +71,9 @@ function to_ascii(value : std_logic_vector) return std_logic_vector is
     signal nibble1, nibble2: std_logic_vector(3 downto 0);
     signal peakStore, listStore: std_logic_vector(7 downto 0);
     
-    signal ListCount, ANNN_byteCount,NNN,digitCount,index,ANNN_NIBBLECount : integer :=0;
+    signal ListCount, ANNN_byteCount,NNN,digitCount,index : integer :=0;
 
-    signal enSend, enSent, peakStored, listStored, NNNStored,bytes_stored, byte_sent, byte_done, results_stored, ANNN_end,nib : boolean := false;
+    signal enSend, enSent, peakStored, listStored, NNNStored,bytes_stored, byte_sent, byte_done, results_stored, ANNN_end : boolean := false;
 
     signal rxnow_reg, txdone_reg, dataReady_reg, seqDone_reg  : std_logic;
     signal maxIndex_reg : BCD_ARRAY_TYPE(2 downto 0);
@@ -176,14 +176,6 @@ reg_bytecount : process(clk)
 begin
     if rising_edge(clk)and topCurState=ANNN_BYTE_COUNT then    
                    ANNN_byteCount <= ANNN_byteCount +1;
-            end if;
-end process; 
-
-reg_NIBBLEcount : process(clk)
---storing data value inputted on the clock edge
-begin
-    if rising_edge(clk)and topCurState=ANNN_BYTE_OUT1_DONE then    
-                   ANNN_NIBBLECount <= ANNN_NIBBLECount +1;
             end if;
 end process; 
 
@@ -344,23 +336,17 @@ end process;
         
                 WHEN SEQ_DONE =>
         IF results_stored = true THEN 
-            topNextState <= ANNN_BYTE_COUNT;
+            topNextState <= ANNN_BYTE_OUT1;
         ELSE
            topNextState <= SEQ_DONE;
         END IF;
         
-         WHEN ANNN_BYTE_COUNT =>
-        IF enSent = true THEN 
-            topNextState <= ANNN_BYTE_OUT1;
-        ELSE
-           topNextState <= ANNN_BYTE_OUT1;
-        END IF;
                       
         WHEN ANNN_BYTE_OUT1 =>
         IF enSent = true THEN 
             topNextState <= ANNN_BYTE_OUT1_DONE;
         ELSE
-           topNextState <= ANNN_BYTE_OUT1;
+           topNextState <= ANNN_BYTE_OUT1_DONE;
         END IF;
         
                 WHEN ANNN_BYTE_OUT1_DONE =>
@@ -372,17 +358,31 @@ end process;
               
         WHEN ANNN_BYTE_OUT2 =>
         IF enSent = true THEN 
+            topNextState <= ANNN_BYTE_OUT2_DONE;
+        ELSE
+           topNextState <= ANNN_BYTE_OUT2_DONE;
+        END IF;        
+        
+                WHEN ANNN_BYTE_OUT2_DONE =>
+        IF enSent = true THEN 
+            topNextState <= ANNN_BYTE_COUNT;
+        ELSE
+           topNextState <= ANNN_BYTE_OUT2_DONE;
+        END IF; 
+        
+                 WHEN ANNN_BYTE_COUNT =>
+        IF enSent = true THEN 
             topNextState <= ANNN_DONE_CHECK;
         ELSE
-           topNextState <= ANNN_BYTE_OUT2;
-        END IF;        
+           topNextState <= ANNN_DONE_CHECK;
+        END IF;
                   
         
         WHEN ANNN_DONE_CHECK =>
         IF ANNN_end=true THEN
             topNextState <= INIT;
             ELSE
-            topNextState <= ANNN_BYTE_COUNT;
+            topNextState <= ANNN_BYTE_OUT1;
         END IF;
              
              
@@ -489,19 +489,11 @@ begin
         
         when ANNN_BYTE_IN   =>            
           enSend <=false;
-                    to_be_sent <= to_ascii(nibble1); 
           byte_sent <= false;
-          
-          
-        when ANNN_BYTE_COUNT  =>
+
+        when ANNN_BYTE_OUT1  =>
           to_be_sent <= to_ascii(nibble1); 
           enSend <= true;
-                    byte_sent <= false;
-
-        
-         when ANNN_BYTE_OUT1_DONE  =>
-                   to_be_sent <= to_ascii(nibble2); 
-          enSend <= false;
          
         when ANNN_BYTE_OUT2  =>
           to_be_sent <= to_ascii(nibble2); 
@@ -509,9 +501,6 @@ begin
           byte_sent <= true;
           
         when ANNN_DONE_CHECK => 
-                  enSend <= FALSE;
-          to_be_sent <= to_ascii(nibble1); 
-
             if ANNN_byteCount > NNN-1 then
                 ANNN_end<= true;
             end if;
@@ -572,10 +561,10 @@ begin
     if rising_edge(clk) then
         if rxnow_reg = '1'  then --ADD AND RXNOW='1' BACK IN PLSSSSSSSSSSSSSSSS              
             txNow <= '1';
-        elsif topCurState = ANNN_BYTE_COUNT and enSend=true then
+        elsif topCurState = ANNN_BYTE_OUT1 and enSent=true then
             txNow <= '1';                  
-        elsif topCurState = ANNN_BYTE_OUT2 and enSend=true then 
-             txNow <= '1';        
+        elsif topCurState = ANNN_BYTE_OUT2 and enSent=true then 
+             txNow <= '1';                   
        else 
           txNow <= '0';        
         end if;      
@@ -597,7 +586,7 @@ end process;
 txData_Out3 : process(clk)
 begin
     if rising_edge(clk) then
-            if topCurState = ANNN_BYTE_OUT1_DONE or topCurState = ANNN_BYTE_IN or topCurState = ANNN_BYTE_OUT1 or topCurState = ANNN_BYTE_OUT2 or topCurState = ANNN_BYTE_COUNT or topCurState = ANNN_DONE_CHECK then   
+            if topCurState = ANNN_BYTE_COUNT  or topCurState = ANNN_BYTE_OUT1_DONE or topCurState = ANNN_BYTE_OUT2_DONE then   
                   sending <=to_be_sent;  
             else
                   sending <=data_reg;  
