@@ -60,7 +60,7 @@ function to_ascii(value : std_logic_vector) return std_logic_vector is
  end function;
 
 -- State declaration for main FSM
-  TYPE state_type IS (INIT, DATA_ECHO, INIT_BYTE, A, A_WAIT, AN, AN_WAIT, ANN, ANN_WAIT, ANNN, ANNN_BYTE_IN,ANNN_BYTE_OUT1_DONE,ANNN_BYTE_OUT2_DONE,SEND_SPACE, ANNN_DONE_CHECK, SEQ_DONE,ANNN_BYTE_COUNT, ANNN_BYTE_OUT1, ANNN_BYTE_OUT2, ANNN_DONE ,P, P_BYTE1, P_BYTE2, P_SPACE, P_INDEX1,P_INDEX2,P_INDEX3, LIST_INIT, LIST_PRINT1, LIST_PRINT2);  -- List your states here 	
+  TYPE state_type IS (INIT, DATA_ECHO, INIT_BYTE, A, A_WAIT, AN, AN_WAIT, ANN, ANN_WAIT, ANNN, ANNN_BYTE_IN,ANNN_BYTE_OUT1_DONE,ANNN_BYTE_OUT2_DONE,SEND_SPACE, ANNN_DONE_CHECK, SEQ_DONE,ANNN_BYTE_COUNT, ANNN_BYTE_OUT1, ANNN_BYTE_OUT2, ANNN_DONE ,P, P_BYTE1, P_BYTE2, P_SPACE, P_INDEX1,P_INDEX2,P_INDEX3, LIST_INIT, LIST_PRINT1, LIST_PRINT2, LIST_COUNT);  -- List your states here 	
   SIGNAL curState, nextState: state_type;
     
     signal data_reg, byte_reg: std_logic_vector(7 downto 0);   -- data_reg: register to synchronously store byte from rx
@@ -71,7 +71,7 @@ function to_ascii(value : std_logic_vector) return std_logic_vector is
     signal nibble1, nibble2: std_logic_vector(3 downto 0);
     signal peakStore, listStore: std_logic_vector(7 downto 0);
     
-    signal ListCount, ANNN_byteCount,NNN,digitCount,index : integer :=0;
+    signal listCount, ANNN_byteCount,NNN,digitCount,index : integer :=0;
 
     signal enSend, enSent, peakStored, listStored, NNNStored,bytes_stored, byte_sent, byte_done, results_stored, ANNN_end : boolean := false;
 
@@ -183,6 +183,14 @@ begin
             end if;
 end process; 
 
+reg_listcount : process(clk)
+--storing data value inputted on the clock edge
+begin
+    if rising_edge(clk)and curState=LIST_COUNT then    
+                   listCount <= listCount +1;
+            end if;
+end process; 
+
 byteDone : process(clk)
 --storing data value inputted on the clock edge
 begin
@@ -266,6 +274,8 @@ end process;
                   nextState <= INIT_BYTE;
         ELSE
                   nextState <= INIT;
+                  
+                
 
         END IF;
         
@@ -462,9 +472,16 @@ end process;
         
        WHEN LIST_PRINT2 =>
             IF enSent = true THEN 
-                nextState <= LIST_INIT;
+                nextState <= LIST_COUNT;
            ELSE
                 nextState <= LIST_PRINT2;
+             END IF;
+      
+            WHEN LIST_COUNT =>
+            IF enSent = true THEN 
+                nextState <= LIST_PRINT1;
+           ELSE
+                nextState <= LIST_PRINT1;
              END IF;
              
              WHEN others =>
@@ -552,6 +569,8 @@ begin
         when LIST_INIT =>
           listStore <= dataResults_reg(listCount); 
           listStored <= true;
+                    enSend <= false;
+
             
         when LIST_PRINT1 =>          
           to_be_sent <= to_ascii(listStore(3 downto 0));
@@ -560,8 +579,10 @@ begin
         when LIST_PRINT2 =>
            to_be_sent <= to_ascii(listStore(7 downto 4));
            enSend <= true;
-           listCount <= listCount + 1;                       
-                
+           
+           when LIST_COUNT  =>
+           to_be_sent <= to_ascii(listStore(7 downto 4));
+           enSend <= FALSE;                
                                        
         when others =>
             -- do nothing
