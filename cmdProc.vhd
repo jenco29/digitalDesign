@@ -127,15 +127,19 @@ reg_dataResults : process(clk)
 --storing data value inputted on the clock edge
 begin
     if rising_edge(clk) then    
-            dataResults_reg <= dataResults;
+            if seqDone_reg='1' then           
+                dataResults_reg <= dataResults;
+            end if;
     end if;
 end process; 
 
 reg_maxIndex : process(clk)
 --storing data value inputted on the clock edge
 begin
-    if rising_edge(clk) then    
+    if rising_edge(clk) then   
+            if seqDone_reg='1' then           
             maxIndex_reg <= maxIndex;
+            end if;
     end if;
 end process; 
 
@@ -416,7 +420,7 @@ end process;
              
          WHEN P_SPACE =>
             IF enSent = true THEN 
-                nextState <= INIT;
+                nextState <= P_INDEX1;
             ELSE
                nextState <= P_SPACE;
              END IF;                     
@@ -425,7 +429,7 @@ end process;
             IF enSent = true THEN 
                 nextState <= P_INDEX2;
             ELSE
-               nextState <= P_INDEX2;
+               nextState <= P_INDEX1;
              END IF; 
              
          WHEN P_INDEX2 =>
@@ -517,11 +521,10 @@ begin
             end if;
         
         when P =>
-          peakStore <= dataResults(3); 
+          peakStore <= dataResults_reg(3); 
           peakStored <= true;
 
           when P_BYTE1 =>
-
            to_be_sent <= to_ascii(peakStore(3 downto 0));           
             enSend <= true;
             
@@ -534,20 +537,20 @@ begin
             enSend <= true;
             
            when P_INDEX1 =>         
-           to_be_sent <= to_ascii(maxIndex(0));          
+           to_be_sent <= to_ascii(maxIndex_reg(0));          
             enSend <= true;
             
          when P_INDEX2 =>         
-            to_be_sent <= to_ascii(maxIndex(1));          
+            to_be_sent <= to_ascii(maxIndex_reg(1));          
             enSend <= true;
             
            when P_INDEX3 =>         
-            to_be_sent <= to_ascii(maxIndex(2));
+            to_be_sent <= to_ascii(maxIndex_reg(2));
            enSend <= true;
            
 
         when LIST_INIT =>
-          listStore <= dataResults(listCount); 
+          listStore <= dataResults_reg(listCount); 
           listStored <= true;
             
         when LIST_PRINT1 =>          
