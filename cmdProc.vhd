@@ -129,19 +129,19 @@ begin
      elsif curState= SEND_SPACE or curState = P_SPACE or curState = LIST_SPACE or curState = ANNN_DONE_CHECK or curState=ANNN_BYTE_COUNT then    
           to_be_sent <= space;
           
-     elsif   curState= P_BYTE1   then    
+     elsif   curState= P_BYTE1 or curState = P_BYTE1_DONE  then    
           to_be_sent <= to_ascii(peakStore(7 downto 4));
           
-     elsif   curState= P_BYTE2   then    
+     elsif   curState= P_BYTE2 or curState = P_BYTE2_DONE  then    
           to_be_sent <= to_ascii(peakStore(3 downto 0));
              
-      elsif   curState= P_INDEX1   then    
+      elsif   curState= P_INDEX1 or curState = P_INDEX1_DONE then    
           to_be_sent <= to_ascii(maxIndex_reg(0));
            
-                elsif   curState= P_INDEX2   then    
+      elsif   curState= P_INDEX2 or curState = P_INDEX2_DONE then    
           to_be_sent <= to_ascii(maxIndex_reg(1));
           
-                elsif   curState= P_INDEX3   then    
+      elsif   curState= P_INDEX3 or curState = P_INDEX2_DONE  then    
           to_be_sent <= to_ascii(maxIndex_reg(2));   
           
                           elsif   curState= LIST_PRINT1   then    
@@ -448,11 +448,7 @@ end process;
              
              
          WHEN P =>
-            IF peakStored = true THEN 
                 nextState <= P_BYTE1;
-            ELSE
-               nextState <= P;
-             END IF;
              
           WHEN P_BYTE1 =>
             IF txDone_reg = '1' THEN 
@@ -635,16 +631,6 @@ begin
           peakStore <= dataResults_reg(3); 
    END IF;
 end process; 
-  
-   set_peakStored : process(curState)
---storing data value inputted on the clock edge
-begin
-         if curState = P  then
-          peakStored <= true;
-          ELSE
-           peakStored <= false;         
-          END IF;
-end process; 
 
    set_listStored: process(curState)
 --storing data value inputted on the clock edge
@@ -675,7 +661,7 @@ begin
         elsif  curState = ANNN_BYTE_COUNT or curState = ANNN_DONE_CHECK then
                         txNow <= '0';
         elsif (curState = ANNN_BYTE_OUT1 or curState = ANNN_BYTE_OUT2 or 
-        curState = LIST_PRINT1 or curState = LIST_PRINT2 or curState = SEQ_DONE or curState = P_BYTE1 or
+        curState = LIST_PRINT1 or curState = LIST_PRINT2 or curState = SEQ_DONE or curState = P_BYTE1 or curState = P_BYTE1_DONE or curState = P_BYTE2_DONE or 
         curState = P_BYTE2 or curState = P_INDEX1 or curState = P_INDEX2 or
         curState = P_INDEX3 or curState = LIST_SPACE) then
             txNow <= '1';             
