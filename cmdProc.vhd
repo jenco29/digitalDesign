@@ -61,7 +61,7 @@ function to_ascii(value : std_logic_vector) return std_logic_vector is
 
 -- State declaration for main FSM
   TYPE state_type IS (INIT, DATA_ECHO, INIT_BYTE, A, A_WAIT, AN, AN_WAIT, ANN, ANN_WAIT, ANNN, ANNN_BYTE_IN,
-  SEND_SPACE, ANNN_DONE_CHECK, SEQ_DONE,ANNN_BYTE_COUNT, ANNN_BYTE_OUT1, BYTE_OUT1_DONE, ANNN_BYTE_OUT2, BYTE_OUT2_DONE, ANNN_DONE ,P, P_BYTE1,P_BYTE1_DONE,
+  SEND_SPACE, ANNN_DONE_CHECK, SEQ_DONE,ANNN_BYTE_COUNT, ANNN_BYTE_OUT1, ANNN_BYTE_OUT2, ANNN_DONE ,P, P_BYTE1,P_BYTE1_DONE,
   P_BYTE2, P_BYTE2_DONE, P_SPACE, P_INDEX1, P_INDEX1_DONE, P_INDEX2, P_INDEX2_DONE,P_INDEX3, LIST_INIT, LIST_PRINT1, LIST_PRINT1_DONE,LIST_SPACE, LIST_PRINT2, LIST_PRINT2_DONE, LIST_COUNT);  -- List your states here 	
   SIGNAL curState, nextState: state_type;
     
@@ -120,13 +120,13 @@ end process;
 set_to_be_sent : process(curState, nibble1,nibble2,listStore,peakStore,maxIndex_reg)
 --storing data value inputted on the clock edge
 begin
-    if curState= ANNN_BYTE_OUT1 or curState = BYTE_OUT1_DONE then    
+    if curState= ANNN_BYTE_OUT1 then    
           to_be_sent <= to_ascii(nibble1);
           
-     elsif curState= ANNN_BYTE_OUT2 or curState = BYTE_OUT2_DONE then    
+     elsif curState= ANNN_BYTE_OUT2   then    
           to_be_sent <= to_ascii(nibble2);
           
-     elsif curState= SEND_SPACE or curState = P_SPACE or curState = LIST_SPACE  then    
+     elsif curState= SEND_SPACE or curState = P_SPACE or curState = LIST_SPACE or curState = ANNN_DONE_CHECK or curState=ANNN_BYTE_COUNT then    
           to_be_sent <= space;
           
      elsif   curState= P_BYTE1   then    
@@ -410,35 +410,35 @@ end process;
         
                       
         WHEN ANNN_BYTE_OUT1 =>
-            nextState <= BYTE_OUT1_DONE;
+        IF txDone_reg = '1' THEN 
+            nextState <= ANNN_BYTE_OUT2;
+        ELSE
+           nextState <= ANNN_BYTE_OUT1;
+        END IF;
         
-        WHEN BYTE_OUT1_DONE =>
-            if txDone_reg = '1' then
-                nextState <= ANNN_BYTE_OUT2;
-            else
-                nextState <= BYTE_OUT1_DONE;
-            end if;
-                
-        WHEN ANNN_BYTE_OUT2 =>
-            nextState <= BYTE_OUT2_DONE;
-  
-        WHEN BYTE_OUT2_DONE =>
-            if txDone_reg = '1' then
-                nextState <= SEND_SPACE;
-            else
-                nextState <= BYTE_OUT2_DONE;
-            end if;        
               
-        WHEN SEND_SPACE =>
+        WHEN ANNN_BYTE_OUT2 =>
+        IF txDone_reg = '1' THEN 
+            nextState <= ANNN_BYTE_COUNT;
+        ELSE
+           nextState <= ANNN_BYTE_OUT2;
+        END IF;        
+              
+                WHEN SEND_SPACE =>
         IF txDone_reg = '1' THEN 
             nextState <= ANNN_BYTE_COUNT;
         ELSE
            nextState <= SEND_SPACE;
         END IF; 
                 
-        WHEN ANNN_BYTE_COUNT =>
+                 WHEN ANNN_BYTE_COUNT =>
+        IF txDone_reg = '1' THEN 
             nextState <= ANNN_DONE_CHECK;
+        ELSE
+           nextState <= ANNN_DONE_CHECK;
+        END IF;
                   
+        
         WHEN ANNN_DONE_CHECK =>
         IF ANNN_end=true THEN
             nextState <= INIT;
@@ -672,15 +672,16 @@ begin
     if rising_edge(clk) then
         if rxnow_reg = '1' then --data echoing             
             txNow <= '1';
-        end if;
-        if (curState = ANNN_BYTE_OUT1 or curState = ANNN_BYTE_OUT2 or 
-        curState = LIST_PRINT1 or curState = LIST_PRINT2 or curState = P_BYTE1 or
+        elsif  curState = ANNN_BYTE_COUNT or curState = ANNN_DONE_CHECK then
+                        txNow <= '0';
+        elsif (curState = ANNN_BYTE_OUT1 or curState = ANNN_BYTE_OUT2 or 
+        curState = LIST_PRINT1 or curState = LIST_PRINT2 or curState = SEQ_DONE or curState = P_BYTE1 or
         curState = P_BYTE2 or curState = P_INDEX1 or curState = P_INDEX2 or
-        curState = P_INDEX3 or curState = SEND_SPACE or curState = LIST_SPACE)and txDone_reg = '1' then
+        curState = P_INDEX3 or curState = LIST_SPACE) then
             txNow <= '1';             
        else 
           txNow <= '0';        
-       end if;      
+        end if;      
     end if;
 end process;
 
@@ -694,14 +695,10 @@ end process;
 txData_Out3 : process(clk,curState)
 begin
     if rising_edge(clk) then
-            if curState = ANNN_BYTE_COUNT or curState = ANNN_DONE_CHECK or 
-            curState=ANNN_BYTE_OUT1 or curState=ANNN_BYTE_OUT2 or curState = LIST_COUNT
+            if curState = ANNN_BYTE_COUNT or curState = ANNN_DONE_CHECK or curState=ANNN_BYTE_OUT1 or curState=ANNN_BYTE_OUT2 or curState = LIST_COUNT
             or curState= SEND_SPACE or curState = LIST_PRINT1 or curState = LIST_PRINT2
-            or curState= LIST_PRINT1_DONE or curState= LIST_PRINT2_DONE or 
-            curState= LIST_SPACE or curState= P_BYTE1 or curState= P_BYTE1_DONE or
-             curState = P_BYTE2 or curState = BYTE_OUT1_DONE or curState = BYTE_OUT2_DONE or curState= P_BYTE2_DONE or curState= P_INDEX1 or curState= P_INDEX1_DONE or
-             curState= P_INDEX2 or curState= P_INDEX2_DONE or 
-            curState = P_SPACE or curState= P_INDEX3  then   
+            or curState= LIST_PRINT1_DONE or curState= LIST_PRINT2_DONE or curState= LIST_SPACE or curState= P_BYTE1 or curState= P_BYTE1_DONE or curState= P_BYTE2
+            or curState= P_BYTE2_DONE or curState= P_INDEX1 or curState= P_INDEX1_DONE or curState= P_INDEX2 or curState= P_INDEX2_DONE or curState = P_SPACE or curState= P_INDEX3  then   
                   sending <=to_be_sent;
                
             else
