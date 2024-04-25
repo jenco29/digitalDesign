@@ -35,7 +35,6 @@ end cmdProc;
 
 architecture Behavioral of cmdProc is
 
---function that converts from byte to ascii
 function to_ascii(value : std_logic_vector) return std_logic_vector is
     variable result : std_logic_vector(7 downto 0);
     begin
@@ -63,28 +62,26 @@ function to_ascii(value : std_logic_vector) return std_logic_vector is
 -- State declaration for main FSM
   TYPE state_type IS (INIT, DATA_ECHO, INIT_BYTE, A, A_WAIT, AN, AN_WAIT, ANN, ANN_WAIT, ANNN, ANNN_BYTE_IN,
   SEND_SPACE, ANNN_DONE_CHECK, SEQ_DONE,ANNN_BYTE_COUNT, ANNN_BYTE_OUT1, ANNN_BYTE_OUT2, ANNN_DONE ,P, P_BYTE1,P_BYTE1_DONE,
-  P_BYTE2, P_BYTE2_DONE, P_SPACE, P_INDEX1, P_INDEX1_DONE, P_INDEX2, P_INDEX2_DONE,P_INDEX3, P_INDEX3_DONE, LIST_INIT, LIST_PRINT1,
-  LIST_PRINT1_DONE,LIST_SPACE, LIST_PRINT2, LIST_PRINT2_DONE, LIST_COUNT);  -- List of states here 	
-    signal curState, nextState: state_type; --  curState, nextState: to employ state logic
-    signal data_reg : std_logic_vector(7 downto 0):= (others => '0');   -- data_reg: register to store byte from rx
-    signal byte_reg : std_logic_vector(7 downto 0):= (others => '0');   -- byte_reg: register to store byte from data processor
-    signal ANNN_reg : BCD_ARRAY_TYPE(2 downto 0); -- ANNN_reg: register to store NNN from rX
+  P_BYTE2, P_BYTE2_DONE, P_SPACE, P_INDEX1, P_INDEX1_DONE, P_INDEX2, P_INDEX2_DONE,P_INDEX3, P_INDEX3_DONE, LIST_INIT, LIST_PRINT1, LIST_PRINT1_DONE,LIST_SPACE, LIST_PRINT2, LIST_PRINT2_DONE, LIST_COUNT);  -- List your states here 	
+  SIGNAL curState, nextState: state_type;
+    
+    signal data_reg, byte_reg: std_logic_vector(7 downto 0):= (others => '0');   -- data_reg: register to synchronously store byte from rx
 
-    signal toBeSent : std_logic_vector(7 downto 0) := (others => '0'); --to store the next byte to be sent to tx in hex
-    signal sending: std_logic_vector(7 downto 0) := (others => '0'); --to store the next byte to be sent to tx in hex
+    signal to_be_sent,sending: std_logic_vector(7 downto 0) := (others => '0'); --to store the next byte to be sent to tx in hex
+    signal ANNN_reg : BCD_ARRAY_TYPE(2 downto 0); -- N registers
     
     signal nibble1, nibble2: std_logic_vector(3 downto 0):= (others => '0');
     signal peakStore, listStore: std_logic_vector(7 downto 0) := (others => '0');
     
-    signal listCount, ANNNbyteCount, NNN, index : integer :=0;
+    signal listCount, ANNN_byteCount,NNN,index : integer :=0;
 
-    signal listStored, NNNStored, bytesStored, byteSent, resultsStored, ANNNend : boolean := false;
+    signal listStored, NNNStored,bytes_stored, byte_sent, results_stored, ANNN_end, NNN_stored : boolean := false;
 
     signal rxnow_reg, txdone_reg, dataReady_reg, seqDone_reg  : std_logic;
     signal maxIndex_reg : BCD_ARRAY_TYPE(2 downto 0) := (others => (others => '0'));
     signal dataResults_reg : CHAR_ARRAY_TYPE(0 to RESULT_BYTE_NUM-1) := (others => ( others => '0')); -- N registers
     -- byte store: register that stores full sequence of bytes from data processor
-    signal byteStore : CHAR_ARRAY_TYPE(0 to SEQ_LENGTH + 5) := (others => ( others => '0'));
+    signal byte_store : CHAR_ARRAY_TYPE(0 to SEQ_LENGTH + 5) := (others => ( others => '0'));
 
         -- constants of symbols in ASCII binary code
     constant lowerp : std_logic_vector (7 downto 0) := "01110000";
@@ -107,51 +104,51 @@ begin
     end if;
 end process; 
 
-set_ANNNend : process(curState, ANNNbyteCount,NNN)
+set_annn_end : process(curState, ANNN_byteCount,NNN)
 --storing data value inputted on the clock edge
 begin
-            if curState = ANNN_DONE_CHECK and ANNNbyteCount > NNN-1 then
-                ANNNend<= true;
+            if curState = ANNN_DONE_CHECK and ANNN_byteCount > NNN-1 then
+                ANNN_end<= true;
             else
-                ANNNend<= false;           
+                ANNN_end<= false;           
             end if;
 end process;
 
 ---------------store byte from rx--------------------------
-set_toBeSent : process(curState, nibble1,nibble2,listStore,peakStore,maxIndex_reg)
+set_to_be_sent : process(curState, nibble1,nibble2,listStore,peakStore,maxIndex_reg)
 --storing data value inputted on the clock edge
 begin
     if curState= ANNN_BYTE_OUT1 then    
-          toBeSent <= to_ascii(nibble1);
+          to_be_sent <= to_ascii(nibble1);
           
      elsif curState= ANNN_BYTE_OUT2   then    
-          toBeSent <= to_ascii(nibble2);
+          to_be_sent <= to_ascii(nibble2);
           
      elsif curState= SEND_SPACE or curState = P_SPACE or curState = LIST_SPACE or curState = ANNN_DONE_CHECK or curState=ANNN_BYTE_COUNT then    
-          toBeSent <= space;
+          to_be_sent <= space;
           
      elsif   curState= P_BYTE1 or curState = P_BYTE1_DONE  then    
-          toBeSent <= to_ascii(peakStore(7 downto 4));
+          to_be_sent <= to_ascii(peakStore(7 downto 4));
           
      elsif   curState= P_BYTE2 or curState = P_BYTE2_DONE then    
-          toBeSent <= to_ascii(peakStore(3 downto 0));
+          to_be_sent <= to_ascii(peakStore(3 downto 0));
              
       elsif   curState= P_INDEX1 or curState = P_INDEX1_DONE then    
-          toBeSent <= to_ascii(maxIndex_reg(2));
+          to_be_sent <= to_ascii(maxIndex_reg(2));
            
       elsif   curState= P_INDEX2 or curState = P_INDEX2_DONE then    
-          toBeSent <= to_ascii(maxIndex_reg(1));
+          to_be_sent <= to_ascii(maxIndex_reg(1));
           
       elsif   curState= P_INDEX3   then    
-          toBeSent <= to_ascii(maxIndex_reg(0));   
+          to_be_sent <= to_ascii(maxIndex_reg(0));   
           
       elsif   curState= LIST_PRINT1 or curState = LIST_PRINT1_DONE  then    
-          toBeSent <= to_ascii(listStore(7 downto 4));   
+          to_be_sent <= to_ascii(listStore(7 downto 4));   
           
       elsif   curState= LIST_PRINT2 or curState = LIST_PRINT2_DONE  then    
-          toBeSent <= to_ascii(listStore(3 downto 0));
+          to_be_sent <= to_ascii(listStore(3 downto 0));
      else
-     toBeSent<= "00000000";
+     to_be_sent<= "00000000";
           
     end if;
 end process;
@@ -165,7 +162,7 @@ begin
         index <= 0;
     else
         if dataReady_reg='1' then
-            byteStore(index) <= byte_reg;
+            byte_store(index) <= byte_reg;
             index<=index+1;           
         end if;       
     end if;
@@ -200,14 +197,14 @@ begin
     end if;
 end process; 
 
-set_results : process(clk,resultsStored)
+set_results : process(clk,results_stored)
 --storing data value inputted on the clock edge
 begin
     if rising_edge(clk) then
         if seqDone_reg ='1'    then
-            resultsStored <= true;
+            results_stored <= true;
         else
-            resultsStored <= false;
+            results_stored <= false;
         end if;
     end if;
 end process; 
@@ -219,13 +216,13 @@ begin
         --if curState=ANNN THEN
         if curState=ANNN_BYTE_IN and index < NNN then
                  start<='1'; 
-                     bytesStored<=true; 
+                     bytes_stored<=true; 
         elsif index > NNN-1 then
            start<='0';
-           bytesStored<=true; 
+           bytes_stored<=true; 
         else 
           start<='0'; 
-          bytesStored<=false; 
+          bytes_stored<=false; 
         end if;
     end if;
 end process; 
@@ -235,9 +232,9 @@ reg_bytecount : process(clk,curState)
 begin
     if rising_edge(clk) then
                 if curState = INIT then
-                ANNNbyteCount<= 0;
+                ANNN_byteCount<= 0;
                 elsif curState=ANNN_BYTE_COUNT then   
-                   ANNNbyteCount <= ANNNbyteCount +1;
+                   ANNN_byteCount <= ANNN_byteCount +1;
                 end if;
             end if;
 end process; 
@@ -307,8 +304,8 @@ begin
         if dataReady = '1' then
             byte_reg <= byte;
         end if;
-          nibble1 <= byteStore(ANNNbyteCount)(7 downto 4); 
-          nibble2 <= byteStore(ANNNbyteCount)(3 downto 0);
+          nibble1 <= byte_store(ANNN_byteCount)(7 downto 4); 
+          nibble2 <= byte_store(ANNN_byteCount)(3 downto 0);
           
     end if;
 end process; 
@@ -322,7 +319,7 @@ end process;
 
   
   
-  combi_nextState: PROCESS(curState,listCount, clk, data_reg, txDone_reg, rxnow_reg,rxnow,NNNStored,bytesStored,seqDone_reg,resultsStored,ANNNend)
+  combi_nextState: PROCESS(curState,listCount, clk, data_reg, txDone_reg, rxnow_reg,rxnow,NNNStored,bytes_stored,seqDone_reg,results_stored,ANNN_end)
   BEGIN
     CASE curState IS
       WHEN INIT =>
@@ -396,14 +393,14 @@ end process;
         END IF;
                       
         WHEN ANNN_BYTE_IN =>
-        IF bytesStored = true and seqDone_reg='1' THEN 
+        IF bytes_stored = true and seqDone_reg='1' THEN 
             nextState <= SEQ_DONE;
         ELSE
            nextState <= ANNN_BYTE_IN;
         END IF;
         
                 WHEN SEQ_DONE =>
-        IF resultsStored = true THEN 
+        IF results_stored = true THEN 
             nextState <= ANNN_BYTE_OUT1;
         ELSE
            nextState <= SEQ_DONE;
@@ -441,7 +438,7 @@ end process;
                   
         
         WHEN ANNN_DONE_CHECK =>
-        IF ANNNend=true THEN
+        IF ANNN_end=true THEN
             nextState <= INIT;
             ELSE
             nextState <= ANNN_BYTE_OUT1;
@@ -573,21 +570,21 @@ end process;
   -----------------------------------------------------
 
 
-  set_NNNstored : process(curState)
+  set_NNN_stored : process(curState)
 --storing data value inputted on the clock edge
 begin
         if curState = ANNN then
-            NNNstored<= true;
+            NNN_stored<= true;
         else
-            NNNstored<= false;
+            NNN_stored<= false;
         end if;
         
 end process; 
 
-  store_NNN : process(NNNstored)
+  store_NNN : process(NNN_stored)
 --storing data value inputted on the clock edge
 begin
-        if NNNstored = false and curState = INIT then
+        if NNN_stored = false and curState = INIT then
             NNN<=0;
         else
          NNN <= ( (TO_INTEGER(UNSIGNED(ANNN_reg(2)))*100) + (TO_INTEGER(UNSIGNED(ANNN_reg(1)))*10) + (TO_INTEGER(UNSIGNED(ANNN_reg(0)))));  
@@ -605,13 +602,13 @@ begin
           END IF;
 end process; 
  
-   set_byteSent : process(curState)
+   set_byte_sent : process(curState)
 --storing data value inputted on the clock edge
 begin
          if curState = SEND_SPACE  then
-          byteSent <= true;
+          byte_sent <= true;
           ELSE
-           byteSent <= false;         
+           byte_sent <= false;         
           END IF;
 end process;   
 
@@ -677,7 +674,7 @@ begin
             or curState= SEND_SPACE or curState = LIST_PRINT1 or curState = LIST_PRINT2
             or curState= LIST_PRINT1_DONE or curState= LIST_PRINT2_DONE or curState= LIST_SPACE or curState= P_BYTE1 or curState= P_BYTE1_DONE or curState= P_BYTE2
             or curState= P_BYTE2_DONE or curState= P_INDEX1 or curState= P_INDEX1_DONE or curState= P_INDEX2 or curState= P_INDEX2_DONE or curState = P_SPACE or curState= P_INDEX3  then   
-                  sending <=toBeSent;
+                  sending <=to_be_sent;
                
             else
                   sending <=data_reg;  
