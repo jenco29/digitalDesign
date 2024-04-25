@@ -129,10 +129,10 @@ begin
      elsif curState= SEND_SPACE or curState = P_SPACE or curState = LIST_SPACE or curState = ANNN_DONE_CHECK or curState=ANNN_BYTE_COUNT then    
           to_be_sent <= space;
           
-     elsif   curState= P_BYTE1   then    
+     elsif   curState= P_BYTE1 or curState = P_BYTE1_DONE  then    
           to_be_sent <= to_ascii(peakStore(7 downto 4));
           
-     elsif   curState= P_BYTE2   then    
+     elsif   curState= P_BYTE2 or curState = P_BYTE2_DONE then    
           to_be_sent <= to_ascii(peakStore(3 downto 0));
              
       elsif   curState= P_INDEX1 or curState = P_INDEX1_DONE then    
