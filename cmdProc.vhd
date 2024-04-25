@@ -321,7 +321,7 @@ end process;
 
   
   
-  combi_nextState: PROCESS(curState,listCount, clk, data_reg, txDone_reg, rxnow_reg,rxnow,NNNStored,bytes_stored,seqDone_reg,results_stored,ANNN_end,peakStored)
+  combi_nextState: PROCESS(curState,listCount, clk, data_reg, txDone_reg, rxnow_reg,rxnow,NNNStored,bytes_stored,seqDone_reg,results_stored,ANNN_end)
   BEGIN
     CASE curState IS
       WHEN INIT =>
