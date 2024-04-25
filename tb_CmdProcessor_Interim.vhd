@@ -1,340 +1,708 @@
-----------------------------------------------------------------------------
---	tb_CmdProcessor_Interim.vhd -- A testbench that simulates the command processor 
---  (interim submission)
-----------------------------------------------------------------------------
--- Author:  Dinesh Pamunuwa, Tian "Tyson" Qin
-----------------------------------------------------------------------------
---
-----------------------------------------------------------------------------
--- README:
---
--- This testbench instantiates all the components, including the Command
--- Processor you design and the blackbox of Data Processor. Note that this 
--- testbench is not aimed for synthesis, and some coding style you see is only
--- acceptable in a testbench. You should always follow the strict template for
--- a synthesizable design (RTL). 
---
--- To run simulation successfully, besides this testbench, the following
--- source files also need to be included in your Modelsim Project:
--- 
--- 
--- cmdProc.vhd :        the command processor that your need to design;
--- dataConsume_synthesis.vhd: The Xilinx synthesised versions of the Data Processor 
---                            (a pure structural implementation);
--- dataConsume_wrapper.vhd:   A wrapper defines some conversion functions and instantiates the synthesised version as a component; 
---                            Effectively, this file and the file above work together as a blackbox for Data Processor
---                            (how Data Processor interprete data is unimportant for interim command processor design);
--- UART_RX_CTRL.vhd:    The source for the UART receiver;
--- UART_TX_CTRL.vhd:    The source for the UART transmitter;
--- datGen.vhd :         Data Generator;
--- common_pack.vhd :    A repostory where global constants, frequently used data types as well as 
---                      the data sequence used by the data generatorand are defined. 
-----------------------------------------------------------------------------
--- Version:			1.1
--- Revision History:
--- 02/02/2016 (Tyson):  Modified to fit the intermim cmdProc design
--- 09/02/2014 (Dinesh): Created using Modelsim
-----------------------------------------------------------------------------
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
 
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
+-- Uncomment the following library declaration if using
+-- arithmetic functions with Signed or Unsigned values
+use IEEE.NUMERIC_STD.ALL;
+
+-- Uncomment the following library declaration if instantiating
+-- any Xilinx leaf cells in this code.
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
 use work.common_pack.all;
-library UNISIM;
-use UNISIM.VCOMPONENTS.ALL;
-use UNISIM.VPKG.ALL;
+use IEEE.NUMERIC_STD.ALL;
+use IEEE.MATH_REAL.ALL;
 
+entity cmdProc is
+    Port ( clk : in STD_LOGIC;
+           reset : in STD_LOGIC;
+           rxnow : in STD_LOGIC; --valid
+           rxData : in std_logic_vector (7 downto 0);
+           txData : out std_logic_vector (7 downto 0);
+           rxdone : out STD_LOGIC;
+           ovErr : in STD_LOGIC;
+           framErr : in STD_LOGIC;
+           txnow : out STD_LOGIC;
+           txdone : in STD_LOGIC;
+           start : out STD_LOGIC;
+           numwords_bcd : out BCD_ARRAY_TYPE(2 downto 0);
+           dataReady : in STD_LOGIC;
+           byte : in std_logic_vector (7 downto 0);
+           maxIndex : in BCD_ARRAY_TYPE(2 downto 0);
+           dataResults : in CHAR_ARRAY_TYPE(0 to RESULT_BYTE_NUM-1);
+           seqDone : in STD_LOGIC);
+end cmdProc;
 
-entity tb_cmdProc_interim is 
-end;
+architecture Behavioral of cmdProc is
 
-architecture testbench of tb_cmdProc_interim is 
-
-  component UART_TX_CTRL is
-    port ( 
-      SEND : in  STD_LOGIC;
-      DATA : in  STD_LOGIC_VECTOR (7 downto 0);
-      CLK : in  STD_LOGIC;
-      READY : out  STD_LOGIC;
-      UART_TX : out  STD_LOGIC
-    );
-  end component;  
-  
-  component UART_RX_CTRL is
-    port(
-      RxD: in std_logic;                -- serial data in
-      sysclk: in std_logic; 		-- system clock
-      reset: in std_logic;		--	synchronous reset
-      rxDone: in std_logic;		-- data succesfully read (active high)
-      rcvDataReg: out std_logic_vector(7 downto 0); -- received data
-      dataReady: out std_logic;	        -- data ready to be read
-      setOE: out std_logic;		-- overrun error (active high)
-      setFE: out std_logic		-- frame error (active high)
-    );
-  end component; 
-
-  component dataGen is
-    port (
-      clk:		in std_logic;
-      reset:		in std_logic; -- synchronous reset
-      ctrlIn: in std_logic;
-      ctrlOut: out std_logic;
-      data: out std_logic_vector(7 downto 0)
-    );
-  end component;
-  
-  component dataConsume is
-    port (
-      clk:		in std_logic;
-      reset:		in std_logic; -- synchronous reset
-      start: in std_logic;
-      numWords_bcd: in BCD_ARRAY_TYPE(2 downto 0);
-      ctrlIn: in std_logic;
-      ctrlOut: out std_logic;
-      data: in std_logic_vector(7 downto 0);
-      dataReady: out std_logic;
-      byte: out std_logic_vector(7 downto 0);
-      seqDone: out std_logic;
-      maxIndex: out BCD_ARRAY_TYPE(2 downto 0);
-      dataResults: out CHAR_ARRAY_TYPE(0 to 6) 
-    );
-  end component;
-  
-  component cmdProc is
-    port (
-      clk:		in std_logic;
-      reset:		in std_logic;
-      rxnow:		in std_logic;
-      rxData:			in std_logic_vector (7 downto 0);
-      txData:			out std_logic_vector (7 downto 0);
-      rxdone:		out std_logic;
-      ovErr:		in std_logic;
-      framErr:	in std_logic;
-      txnow:		out std_logic;
-      txdone:		in std_logic;
-      start: out std_logic;
-      numWords_bcd: out BCD_ARRAY_TYPE(2 downto 0);
-      dataReady: in std_logic;
-      byte: in std_logic_vector(7 downto 0);
-      maxIndex: in BCD_ARRAY_TYPE(2 downto 0);
-      dataResults: in CHAR_ARRAY_TYPE(0 to RESULT_BYTE_NUM-1);
-      seqDone: in std_logic
-    );
-  end component;
-  
-  signal clk: std_logic := '0';
-  signal reset, sig_start, ctrl_genDriv, ctrl_consDriv, sig_dataReady, sig_seqDone: std_logic;
-  signal sig_rxDone, sig_rxNow, sig_ovErr, sig_framErr, sig_txNow, sig_txDone: std_logic;
-  signal sig_rx, sig_tx, sig_rx_debug: std_logic;
-  
-  signal sig_rxData, sig_txData, sig_byte: std_logic_vector(7 downto 0);
-  signal sig_maxIndex: BCD_ARRAY_TYPE(2 downto 0);
-  
-  signal sig_dataResults: CHAR_ARRAY_TYPE(0 to 6);
-  signal sig_numWords_bcd: BCD_ARRAY_TYPE(2 downto 0);
-  
-  signal sig_data: std_logic_vector(7 downto 0);
+function to_ascii(value : std_logic_vector) return std_logic_vector is
+    variable result : std_logic_vector(7 downto 0);
+    begin
+    if value >= "0000" and value <= "1001" then
+        result := "0011" & value;
+    elsif value = "1010" then -- 10
+        result := "01000001";
+    elsif value = "1011" then -- 11
+        result := "01000010";
+    elsif value = "1100" then -- 12
+        result := "01000011";
+    elsif value = "1101" then -- 13
+        result := "01000100";
+    elsif value = "1010" then -- 14
+        result := "01000101";
+    elsif value = "1011" then -- 15
+        result := "01000110";
+    else
+        result := "00000000";
     
-  constant SEQ_COUNT_MAX : integer := 1; -- defines how many runs to test
-  
-  type ARRAY3D_TYPE is array (0 to SEQ_COUNT_MAX) of CHAR_ARRAY_TYPE(0 to RESULT_BYTE_NUM-1);
-  type ARRAY3D_BCD_TYPE is array (0 to SEQ_COUNT_MAX) of BCD_ARRAY_TYPE(2 downto 0);
-  type SEQUENCE_TYPE is array (integer range<> ) of CHAR_ARRAY_TYPE(1 to 2);
- 
-  constant sequence1 : SEQUENCE_TYPE(1 to 12) := (("00111001","00110101"),   --X"95"
-                                                  ("00110001","00110011"),   --X"13"
-                                                  ("00110110","00110000"),   --X"60"
-                                                  ("00110000","00111001"),   --X"09"
-                                                  ("00110110","00111000"),   --X"68"
-                                                  ("01000001","00111000"),   --X"A8"
-                                                  ("00111001","00110011"),   --X"93"
-                                                  ("01000110","00111001"),   --X"F9"
-                                                  ("00110111","00110001"),   --X"71"
-                                                  ("01000011","00110111"),   --X"C7"
-                                                  ("00111001","00110010"),   --X"92"
-                                                  ("00110000","00110110")   --X"06"
-                                                  );
-   
+    end if;
+    return result;
+ end function;
+
+-- State declaration for main FSM
+  TYPE state_type IS (INIT, DATA_ECHO, INIT_BYTE, A, A_WAIT, AN, AN_WAIT, ANN, ANN_WAIT, ANNN, ANNN_BYTE_IN,
+  SEND_SPACE, ANNN_DONE_CHECK, SEQ_DONE,ANNN_BYTE_COUNT, ANNN_BYTE_OUT1, ANNN_BYTE_OUT2, ANNN_DONE ,P, P_BYTE1,P_BYTE1_DONE,
+  P_BYTE2, P_BYTE2_DONE, P_SPACE, P_INDEX1, P_INDEX1_DONE, P_INDEX2, P_INDEX2_DONE,P_INDEX3, LIST_INIT, LIST_PRINT1, LIST_PRINT1_DONE,LIST_SPACE, LIST_PRINT2, LIST_PRINT2_DONE, LIST_COUNT);  -- List your states here 	
+  SIGNAL curState, nextState: state_type;
     
-                                    
-  -- function to convert std_logic_vector having '1's and '0's to string
-  -- used in assertion
-  function vec2str(vec : std_logic_vector) return string is
-    variable str : string(vec'LEFT+1 DOWNTO 1);
-  begin
-    for i in vec'REVERSE_RANGE loop
-      if vec(i) = '1' then
-        str(i+1) := '1';
-      elsif vec(i) = '0' then
-        str(i+1) := '0';
-      else
-        str(i+1) := 'X';
-      end if;
-    end loop;
-    return str;
-  end vec2str;
-  
-  
+    signal data_reg, byte_reg: std_logic_vector(7 downto 0):= (others => '0');   -- data_reg: register to synchronously store byte from rx
+
+    signal to_be_sent,sending: std_logic_vector(7 downto 0) := (others => '0'); --to store the next byte to be sent to tx in hex
+    signal ANNN_reg : BCD_ARRAY_TYPE(2 downto 0); -- N registers
+    
+    signal nibble1, nibble2: std_logic_vector(3 downto 0):= (others => '0');
+    signal peakStore, listStore: std_logic_vector(7 downto 0) := (others => '0');
+    
+    signal listCount, ANNN_byteCount,NNN,index : integer :=0;
+
+    signal peakStored, listStored, NNNStored,bytes_stored, byte_sent, results_stored, ANNN_end, NNN_stored : boolean := false;
+
+    signal rxnow_reg, txdone_reg, dataReady_reg, seqDone_reg  : std_logic;
+    signal maxIndex_reg : BCD_ARRAY_TYPE(2 downto 0) := (others => (others => '0'));
+    signal dataResults_reg : CHAR_ARRAY_TYPE(0 to RESULT_BYTE_NUM-1) := (others => ( others => '0')); -- N registers
+    -- byte store: register that stores full sequence of bytes from data processor
+    signal byte_store : CHAR_ARRAY_TYPE(0 to SEQ_LENGTH + 5) := (others => ( others => '0'));
+
+        -- constants of symbols in ASCII binary code
+    constant lowerp : std_logic_vector (7 downto 0) := "01110000";
+    constant upperp : std_logic_vector (7 downto 0) := "01010000";
+    constant lowerl : std_logic_vector (7 downto 0) := "01101100";
+    constant upperl : std_logic_vector (7 downto 0) := "01001100";
+    constant lowera : std_logic_vector (7 downto 0) := "01100001";
+    constant uppera : std_logic_vector (7 downto 0) := "01000001";
+    constant space : std_logic_vector (7 downto 0) := "00100000";
+    constant num_ascii : std_logic_vector (3 downto 0) := "0011";
+
+
+
+BEGIN
+
+---------------store byte from rx--------------------------
+reg_txdone : process(clk)
+--storing data value inputted on the clock edge
 begin
-  clk <= NOT clk after 5 ns when now <2000 ms else clk;
-  reset <= '0', '1' after 2 ns, '0' after 15 ns, '0' after 3600 ns, '0' after 3615 ns;
+    if rising_edge(clk) then    
+            txdone_reg <= txdone;
+    end if;
+end process; 
 
-  byteCounter: process (sig_start, sig_dataReady, sig_seqDone)  --this process checks that correct number of bytes are logged according to cmd
-    variable seqCount: integer :=0;
-    variable byteCount, bytetoProcess: integer := 0;
-    variable v_numWords_bcd: BCD_ARRAY_TYPE(2 downto 0);
-  begin
-    if rising_edge (sig_start) and byteCount = 0 then
-      seqCount := seqCount + 1;
-      assert false report "=====Process of Sequence No." & INTEGER'IMAGE(seqCount) & " starts." severity note;
-      v_numWords_bcd := sig_numWords_bcd;
-      bytetoProcess := to_integer(unsigned(v_numWords_bcd(2)))* 100 + to_integer(unsigned(v_numWords_bcd(1)))* 10 + to_integer(unsigned(v_numWords_bcd(0)));
+set_annn_end : process(curState, ANNN_byteCount,NNN)
+--storing data value inputted on the clock edge
+begin
+            if curState = ANNN_DONE_CHECK and ANNN_byteCount > NNN-1 then
+                ANNN_end<= true;
+            else
+                ANNN_end<= false;           
+            end if;
+end process; 
+
+---------------store byte from rx--------------------------
+set_to_be_sent : process(curState, nibble1,nibble2,listStore,peakStore,maxIndex_reg)
+--storing data value inputted on the clock edge
+begin
+    if curState= ANNN_BYTE_OUT1 then    
+          to_be_sent <= to_ascii(nibble1);
+          
+     elsif curState= ANNN_BYTE_OUT2   then    
+          to_be_sent <= to_ascii(nibble2);
+          
+     elsif curState= SEND_SPACE or curState = P_SPACE or curState = LIST_SPACE or curState = ANNN_DONE_CHECK or curState=ANNN_BYTE_COUNT then    
+          to_be_sent <= space;
+          
+     elsif   curState= P_BYTE1   then    
+          to_be_sent <= to_ascii(peakStore(7 downto 4));
+          
+     elsif   curState= P_BYTE2   then    
+          to_be_sent <= to_ascii(peakStore(3 downto 0));
+             
+      elsif   curState= P_INDEX1 or curState = P_INDEX1_DONE then    
+          to_be_sent <= to_ascii(maxIndex_reg(0));
+           
+      elsif   curState= P_INDEX2 or curState = P_INDEX2_DONE then    
+          to_be_sent <= to_ascii(maxIndex_reg(1));
+          
+      elsif   curState= P_INDEX3   then    
+          to_be_sent <= to_ascii(maxIndex_reg(2));   
+          
+                          elsif   curState= LIST_PRINT1   then    
+          to_be_sent <= to_ascii(listStore(7 downto 4));   
+          
+                          elsif   curState= LIST_PRINT2   then    
+          to_be_sent <= to_ascii(listStore(3 downto 0));   
+     else
+     to_be_sent<= "00000000";
+          
     end if;
-    if rising_edge (sig_dataReady) then
-      byteCount := byteCount + 1;
+end process;
+
+-- process to store each incoming byte on the clock when data is to be read
+store_byte : process(clk,curState,dataReady_reg)
+begin
+    if rising_edge(clk) then
+    
+    if curState = INIT then
+        index <= 0;
+    else
+        if dataReady_reg='1' then
+            byte_store(index) <= byte_reg;
+            index<=index+1;           
+        end if;       
     end if;
-    if rising_edge (sig_seqDone) then
-      assert false report "=====Process of Sequence No." & INTEGER'IMAGE(seqCount) & " is done." severity note;
-      
-      report "=====A total of " & INTEGER'IMAGE(byteCount) & " bytes has been processed; " severity note;
-      assert byteCount = bytetoProcess report "numWords_BCD = " & INTEGER'IMAGE(bytetoProcess) & " at the start of this sequence" severity warning;
-      byteCount := 0;
-      bytetoProcess := 0;
     end if;
-  end process;
- 
- 
-  checkByte: process   --this process checks whether the bytes in sequence 1 are correctly transmited through TX
-                 --it is assumed that an delimiter (such as blank space) is in between two bytes when sent to PC
-  begin
-    wait for 10 ns;
-    for i in 1 to 12 loop
-      wait until sig_start = '1';
-      for j in 1 to 3 loop
-          wait until sig_txNow = '1';
-          if j/=3 then
-            assert sig_txData = sequence1(i)(j) 
-            report "txData is " & vec2str(sig_txData)& "; while byte(" & INTEGER'IMAGE(i) & ") character(" & INTEGER'IMAGE(j) & ") should be " & vec2str(sequence1(i)(j)) severity error;
-          end if;
-      end loop;
-    end loop;
-    wait;
-  end process;
+end process; 
+
+reg_dataReady : process(clk)
+--storing data value inputted on the clock edge
+begin
+    if rising_edge(clk) then    
+            dataReady_reg <= dataReady;
+    end if;
+end process; 
+
+reg_dataResults : process(clk,seqDone_reg)
+--storing data value inputted on the clock edge
+begin
+    if rising_edge(clk) then    
+            if seqDone_reg='1' then           
+                dataResults_reg <= dataResults;
+            end if;
+    end if;
+end process; 
+
+reg_maxIndex : process(clk,seqDone_reg)
+--storing data value inputted on the clock edge
+begin
+    if rising_edge(clk) then   
+            if seqDone_reg='1' then           
+            maxIndex_reg <= maxIndex;
+            end if;
+    end if;
+end process; 
+
+set_results : process(clk,results_stored)
+--storing data value inputted on the clock edge
+begin
+    if rising_edge(clk) then
+        if seqDone_reg ='1'    then
+            results_stored <= true;
+        else
+            results_stored <= false;
+        end if;
+    end if;
+end process; 
+
+set_start : process(clk,curState,index,NNN)
+--storing data value inputted on the clock edge
+begin
+    if rising_edge(clk) then 
+        --if curState=ANNN THEN
+        if curState=ANNN_BYTE_IN and index < NNN then
+                 start<='1'; 
+                     bytes_stored<=true; 
+        elsif index > NNN-1 then
+           start<='0';
+           bytes_stored<=true; 
+        else 
+          start<='0'; 
+          bytes_stored<=false; 
+        end if;
+    end if;
+end process; 
+
+reg_bytecount : process(clk,curState)
+--storing data value inputted on the clock edge
+begin
+    if rising_edge(clk) then
+                if curState = INIT then
+                ANNN_byteCount<= 0;
+                elsif curState=ANNN_BYTE_COUNT then   
+                   ANNN_byteCount <= ANNN_byteCount +1;
+                end if;
+            end if;
+end process; 
+
+reg_listcount : process(clk,curState)
+--storing data value inputted on the clock edge
+begin
+    if rising_edge(clk) then
+                if curState = INIT then
+                listCount <= 0;
+                elsif curState=LIST_COUNT then   
+                   listCount <= listCount +1;
+                end if;
+            end if;
+end process; 
+
+reg_seqDone : process(clk)
+--storing data value inputted on the clock edge
+begin
+    if rising_edge(clk) then    
+            seqDone_reg <= seqDone;
+    end if;
+end process; 
+
+reg_rxdata : process(clk,rxnow_reg)
+--storing data value inputted on the clock edge
+begin
+    if rising_edge(clk) then
+        if rxnow_reg = '1' then
+            data_reg <= rxdata;
+            rxDone <= '1';
+        else
+            rxDone <= '0';
+        end if;
+    end if;
+end process;
+
+SET_ANN_REG : process(clk)
+begin    
+    if curState  = INIT then
+              ANNN_reg(0) <= "0000";
+               ANNN_reg(1) <= "0000";
+              ANNN_reg(2) <= "0000";
+    elsif curState = AN then
+                  ANNN_reg(2) <= data_reg(3 downto 0);
+        elsif curState = ANN then
+                  ANNN_reg(1) <= data_reg(3 downto 0);
+        elsif curState = ANNN then
+                  ANNN_reg(0) <= data_reg(3 downto 0);
+
+    end if;
+end process;
+
+SET_NUMWORDS : process(clk)
+begin    
+    if rising_edge(clk) then
+          numwords_bcd(2) <= ANNN_reg(2);
+          numwords_bcd(1) <= ANNN_reg(1);
+          numwords_bcd(0) <= ANNN_reg(0);   
+    end if;
+end process;
+
+reg_byte : process(clk,dataReady)
+--storing data value inputted on the clock edge
+begin
+    if rising_edge(clk) then
+        if dataReady = '1' then
+            byte_reg <= byte;
+        end if;
+          nibble1 <= byte_store(ANNN_byteCount)(7 downto 4); 
+          nibble2 <= byte_store(ANNN_byteCount)(3 downto 0);
+          
+    end if;
+end process; 
+
+reg_rxnow : process(clk,rxnow_reg,rxnow)
+begin
+    if rising_edge(clk) then
+        rxnow_reg <= rxnow;
+    end if;
+end process;
+
   
-  -----------------------------
-  -- issue first read cmd a012
-  -----------------------------
-  -- a: 1, 0, 1000_0110, 1 (idle - 1, start bit - 0, a (0110_0001) in order of LSB first, stop bit -1)
-  sig_rx <= '1', '0' after 1 us, '1' after 105 us, '0' after 209 us,  '0' after 313 us,  '0' after 417 us,  
-  '0' after 521 us,  '1' after 625 us,  '1' after 729 us,  '0' after 833 us, '1' after 937 us, 
-  -- 0: 0, 0000_1100, 1 (start bit - 0, decimal 0 (0011_0000) in order of LSB first, stop bit -1)
-  '0' after 1200 us, '0' after 1304 us, '0' after 1408 us, '0' after 1512 us,  '0' after 1616 us,  
-  '1' after 1720 us, '1' after 1824 us,  '0' after 1928 us,  '0' after 2032 us,  '1' after 2136 us, 
-  -- 1: 0, 10001100, 1 (start bit - 0, decimal 0 (0011_0001) in order of LSB first, stop bit -1)
-    '0' after 2500 us, '1' after 2604 us, '0' after 2708 us, '0' after 2812 us, '0' after 2916 us,
-    '1' after 3020 us,  '1' after 3124 us,  '0' after 3228 us,  '0' after 3332 us,  '1' after 3436 us,  
-  -- 2: 0, 0100_1100, 1 (start bit - 0, decimal 2 (0011_0010) in order of LSB first, stop bit -1)
-  '0' after 3800 us, '0' after 3904 us, '1' after 4008 us, '0' after 4112 us, '0' after 4216 us, 
-  '1' after 4320 us, '1' after 4424 us, '0' after 4528 us, '0' after 4632 us, '1' after 4736 us,
-  -----------------------------
-  -- issue second read cmd A013
-  -----------------------------
---  -- A: 1, 01000010, 1 (idle - 1, start bit - 0, A (0100_0001) in order of LSB first, stop bit -1)
---  '1' after 132000 us, '0' after 132001 us, '1' after 132105 us, '0' after 132209 us,  '0' after 132313 us,  '0' after 132417 us,  
---  '0' after 132521 us,  '0' after 132625 us,  '1' after 132729 us,  '0' after 132833 us, '1' after 132937 us, 
---  -- 0: 0, 00001100, 1 (start bit - 0, decimal 0 (0011_0000) in order of LSB first, stop bit -1)
---  '0' after 133200 us, '0' after 133304 us, '0' after 133408 us, '0' after 133512 us,  '0' after 133616 us,  
---  '1' after 133720 us, '1' after 133824 us,  '0' after 133928 us,  '0' after 134032 us,  '1' after 134136 us, 
---  -- 1: 0, 10001100, 1 (start bit - 0, decimal 0 (0011_0001) in order of LSB first, stop bit -1)
---  '0' after 134500 us, '1' after 134604 us, '0' after 134708 us, '0' after 134812 us, '0' after 134916 us,
---  '1' after 135020 us,  '1' after 135124 us,  '0' after 135228 us,  '0' after 135332 us,  '1' after 135436 us,  
---  -- 3: 0, 11001100, 1 (start bit - 0, decimal 2 (0011_0011) in order of LSB first, stop bit -1)
---  '0' after 135800 us, '1' after 135904 us, '1' after 136008 us, '0' after 136112 us, '0' after 136216 us, 
---  '1' after 136320 us, '1' after 136424 us, '0' after 136528 us, '0' after 136632 us, '1' after 136736 us,
---  ------------------------------
+  
+  combi_nextState: PROCESS(curState,listCount, clk, data_reg, txDone_reg, rxnow_reg,rxnow,NNNStored,bytes_stored,seqDone_reg,results_stored,ANNN_end,peakStored)
+  BEGIN
+    CASE curState IS
+      WHEN INIT =>
+        IF rxnow_reg = '1' THEN 
+                  nextState <= INIT_BYTE;
+        ELSE
+                  nextState <= INIT;
+                              
+        END IF;
+        
+         WHEN INIT_BYTE =>
+        IF data_reg = lowera or data_reg = uppera THEN 
+          nextState <= A;
+        ELSIF data_reg = lowerp or data_reg = upperp THEN 
+          nextState <= P;
+        ELSIF data_reg = lowerl or data_reg = upperl THEN 
+          nextState <= LIST_INIT;
+        ELSE
+          nextState <= INIT;
+        END IF;
+
+        
+        
+      WHEN A =>
+        IF (data_reg(7 downto 4) = num_ascii) and (rxNow_reg='1') and ((TO_INTEGER(UNSIGNED(data_reg))) > 47) and ((TO_INTEGER(UNSIGNED(data_reg))) < 58) THEN 
+            nextState <= A_WAIT;
+        ELSE 
+            nextState <= A;
+        END IF;
+        
+         WHEN A_WAIT =>
+        IF (data_reg(7 downto 4) = num_ascii) and (rxNow_reg='0') and ((TO_INTEGER(UNSIGNED(data_reg))) > 47) and ((TO_INTEGER(UNSIGNED(data_reg))) < 58) THEN 
+            nextState <= AN;
+        ELSE
+            nextState <= A_WAIT;
+        END IF;
+             
+              WHEN AN =>
+        IF (data_reg(7 downto 4) = num_ascii) and (rxNow_reg='1') and ((TO_INTEGER(UNSIGNED(data_reg))) > 47) and ((TO_INTEGER(UNSIGNED(data_reg))) < 58) THEN 
+            nextState <= AN_WAIT;
+        ELSE
+            nextState <= AN;
+        END IF;
  
-  ------------------------
-  -- issue print results cmd L
-  ------------------------ 
-  -- L: 0, 0011_0010, 1 (start bit - 0, A (0100_1100) in order of LSB first, stop bit -1)
-  --'0' after 20001 us, '0' after 20105 us, '0' after 20209 us,  '1' after 20313 us,  '1' after 20417 us,  
-  --'0' after 20521 us,  '0' after 20625 us,  '1' after 20729 us,  '0' after 20833 us, '1' after 20937 us,
-  ------------------------
-  -- issue print results cmd P
-  ------------------------ 
-  -- P: 0, 0000_1010, 1 (start bit - 0, P (0101_0000) in order of LSB first, stop bit -1)
-  '0' after 20001 us, '0' after 20105 us, '0' after 20209 us,  '0' after 20313 us,  '0' after 20417 us,  
-  '1' after 20521 us,  '0' after 20625 us,  '1' after 20729 us,  '0' after 20833 us, '1' after 20937 us;
+          WHEN AN_WAIT =>
+        IF (data_reg(7 downto 4) = num_ascii) and (rxNow_reg='0') and ((TO_INTEGER(UNSIGNED(data_reg))) > 47) and ((TO_INTEGER(UNSIGNED(data_reg))) < 58) THEN 
+            nextState <= ANN;
+        ELSE
+            nextState <= AN_WAIT;
+        END IF;
+                             
+            WHEN ANN =>
+        IF (data_reg(7 downto 4) = num_ascii) and (rxNow_reg='1')and ((TO_INTEGER(UNSIGNED(data_reg))) > 47) and ((TO_INTEGER(UNSIGNED(data_reg))) < 58) THEN 
+            nextState <= ANN_WAIT;
+        ELSE
+            nextState <= ANN;
+        END IF;
+ 
+          WHEN ANN_WAIT =>
+        IF (data_reg(7 downto 4) = num_ascii) and (rxNow_reg='0') and ((TO_INTEGER(UNSIGNED(data_reg))) > 47) and ((TO_INTEGER(UNSIGNED(data_reg))) < 58) THEN 
+            nextState <= ANNN;
+        ELSE
+            nextState <= ANN_WAIT;
+        END IF;
+                      
+         WHEN ANNN =>
+        IF NNNStored = true THEN 
+            nextState <= ANNN_BYTE_IN;
+        ELSE
+            nextState <= ANNN;
+        END IF;
+                      
+        WHEN ANNN_BYTE_IN =>
+        IF bytes_stored = true and seqDone_reg='1' THEN 
+            nextState <= SEQ_DONE;
+        ELSE
+           nextState <= ANNN_BYTE_IN;
+        END IF;
+        
+                WHEN SEQ_DONE =>
+        IF results_stored = true THEN 
+            nextState <= ANNN_BYTE_OUT1;
+        ELSE
+           nextState <= SEQ_DONE;
+        END IF;
+        
+                      
+        WHEN ANNN_BYTE_OUT1 =>
+        IF txDone_reg = '1' THEN 
+            nextState <= ANNN_BYTE_OUT2;
+        ELSE
+           nextState <= ANNN_BYTE_OUT1;
+        END IF;
+        
+              
+        WHEN ANNN_BYTE_OUT2 =>
+        IF txDone_reg = '1' THEN 
+            nextState <= ANNN_BYTE_COUNT;
+        ELSE
+           nextState <= ANNN_BYTE_OUT2;
+        END IF;        
+              
+                WHEN SEND_SPACE =>
+        IF txDone_reg = '1' THEN 
+            nextState <= ANNN_BYTE_COUNT;
+        ELSE
+           nextState <= SEND_SPACE;
+        END IF; 
+                
+                 WHEN ANNN_BYTE_COUNT =>
+        IF txDone_reg = '1' THEN 
+            nextState <= ANNN_DONE_CHECK;
+        ELSE
+           nextState <= ANNN_DONE_CHECK;
+        END IF;
+                  
+        
+        WHEN ANNN_DONE_CHECK =>
+        IF ANNN_end=true THEN
+            nextState <= INIT;
+            ELSE
+            nextState <= ANNN_BYTE_OUT1;
+        END IF;
+             
+             
+         WHEN P =>
+                nextState <= P_BYTE1;
+             
+          WHEN P_BYTE1 =>
+            IF txDone_reg = '1' THEN 
+                nextState <= P_BYTE1_DONE;
+            ELSE
+               nextState <= P_BYTE1_DONE;                
+            END IF;
+            
+                   WHEN P_BYTE1_DONE =>
+            IF txDone_reg = '1' THEN 
+                nextState <= P_BYTE2;
+            ELSE
+               nextState <= P_BYTE1_DONE;                
+            END IF;
+             
+         WHEN P_BYTE2 =>
+            IF txDone_reg = '1' THEN 
+                nextState <= P_BYTE2_DONE;
+             ELSE
+               nextState <= P_BYTE2_DONE;               
+             END IF;
+             
+             WHEN P_BYTE2_DONE =>
+            IF txDone_reg = '1' THEN 
+                nextState <= P_SPACE;
+            ELSE
+               nextState <= P_BYTE2_DONE;                
+            END IF;
+             
+         WHEN P_SPACE =>
+            IF txDone_reg = '1' THEN 
+                nextState <= P_INDEX1;
+            ELSE
+               nextState <= P_SPACE;
+             END IF;                     
+             
+        WHEN P_INDEX1 =>
+            IF txDone_reg = '1' THEN 
+                nextState <= P_INDEX1_DONE;
+            ELSE
+               nextState <= P_INDEX1_DONE;
+             END IF; 
+             
+                 WHEN P_INDEX1_DONE =>
+            IF txDone_reg = '1' THEN 
+                nextState <= P_INDEX2;
+            ELSE
+               nextState <= P_INDEX1_DONE;
+             END IF; 
+                 
+         WHEN P_INDEX2 =>
+            IF txDone_reg = '1' THEN 
+                nextState <= P_INDEX3;
+            ELSE
+               nextState <= P_INDEX2;
+             END IF;   
+             
+               WHEN P_INDEX2_DONE =>
+            IF txDone_reg = '1' THEN 
+                nextState <= P_INDEX3;
+            ELSE
+               nextState <= P_INDEX2_DONE;
+             END IF;      
+                   
+       WHEN P_INDEX3 =>
+            IF txDone_reg = '1' THEN 
+                nextState <= INIT;
+            ELSE
+               nextState <= P_INDEX3;
+             END IF; 
+             
+        
+       WHEN LIST_INIT =>
+        IF listCount = 7 THEN 
+          nextState <= INIT;
+        ELSE
+          nextState <= LIST_PRINT1;      
+        END IF;
+                     
+      WHEN LIST_PRINT1 =>
+            IF txDone_reg = '1' THEN 
+                nextState <= LIST_PRINT1_DONE;
+        ELSE
+                nextState <= LIST_PRINT1_DONE;    
+             END IF;
+             
+             WHEN LIST_PRINT1_DONE =>
+            IF txDone_reg = '1' THEN 
+                nextState <= LIST_PRINT2;
+        ELSE
+                nextState <= LIST_PRINT1_DONE;    
+             END IF;        
+        
+       WHEN LIST_PRINT2 =>
+            IF txDone_reg = '1' THEN 
+                nextState <= LIST_PRINT2_DONE;
+           ELSE
+                nextState <= LIST_PRINT2_DONE;
+             END IF;
+             
+                    WHEN LIST_PRINT2_DONE =>
+            IF txDone_reg = '1' THEN 
+                nextState <= LIST_SPACE;
+           ELSE
+                nextState <= LIST_PRINT2_DONE;
+             END IF;
+             
+            WHEN LIST_SPACE =>
+            IF txDone_reg = '1' THEN 
+                nextState <= LIST_COUNT;
+        ELSE
+                nextState <= LIST_SPACE;    
+             END IF;
+      
+            WHEN LIST_COUNT =>
 
-----------------------------------------
--- structural design starts from below
-----------------------------------------  
-  dataGen1: dataGen
-    port map (
-      clk => clk,
-      reset => reset,
-      ctrlIn => ctrl_consDriv,
-      ctrlOut => ctrl_genDriv,
-      data => sig_data
-    );
-    
-  dataConsume1: dataConsume
-    port map (
-      clk => clk,
-      reset => reset,
-      start => sig_start,
-      numWords_bcd => sig_numWords_bcd,
-      ctrlIn => ctrl_genDriv,
-      ctrlOut => ctrl_consDriv,
-      dataReady => sig_dataReady,
-      byte => sig_byte,
-      data => sig_data,
-      seqDone => sig_seqDone,
-      maxIndex => sig_maxIndex,
-      dataResults => sig_dataResults
-    );
-    
-  cmdProc1: cmdProc
-    port map (
-      clk => clk,
-      reset => reset,
-      rxNow => sig_rxNow,
-      rxData => sig_rxData,
-      txData => sig_txData,
-      rxDone => sig_rxDone,
-      ovErr => sig_ovErr,
-      framErr => sig_framErr,
-      txNow => sig_txNow,
-      txDone => sig_txDone,
-      start => sig_start,
-      numWords_bcd => sig_numWords_bcd,
-      dataReady => sig_dataReady,
-      byte => sig_byte,
-      maxIndex => sig_maxIndex,
-      seqDone => sig_seqDone,
-      dataResults => sig_dataResults
-    );
-    	
-  tx: UART_TX_CTRL
-    port map (
-      SEND => sig_txNow,
-      DATA => sig_txData,
-      CLK => clk,
-      READY => sig_txDone,
-      UART_TX => sig_tx
-    );    	
-  	
-  rx : UART_RX_CTRL
-   port map(
-     RxD => sig_rx, -- input serial line
-     sysclk => clk,
-     reset => reset, 
-     rxDone => sig_rxdone,
-     rcvDataReg => sig_rxData,
-     dataReady => sig_rxNow,
-     setOE => sig_ovErr,
-     setFE =>  sig_framerr
-   );   	
-  	
- end testbench;
+           IF listCount > 6 THEN
+                nextState <= INIT;
+           ELSE 
+                nextState <= LIST_PRINT1;
+             END IF;
+                         
+             
+             WHEN others =>
+                nextState <= INIT;
+                    
 
+        
+    END CASE;
+  END PROCESS; -- combi_nextState
+  -----------------------------------------------------
+
+
+  set_NNN_stored : process(curState)
+--storing data value inputted on the clock edge
+begin
+        if curState = ANNN then
+            NNN_stored<= true;
+        else
+            NNN_stored<= false;
+        end if;
+        
+end process; 
+
+  store_NNN : process(NNN_stored)
+--storing data value inputted on the clock edge
+begin
+        if NNN_stored = false and curState = INIT then
+            NNN<=0;
+        else
+         NNN <= ( (TO_INTEGER(UNSIGNED(ANNN_reg(2)))*100) + (TO_INTEGER(UNSIGNED(ANNN_reg(1)))*10) + (TO_INTEGER(UNSIGNED(ANNN_reg(0)))));  
+        end if;
+               
+end process; 
+
+  set_NNNStored : process(curState)
+--storing data value inputted on the clock edge
+begin
+            if curState = ANNN  then
+          NNNStored <= true;
+          ELSE
+           NNNStored <= false;         
+          END IF;
+end process; 
+ 
+   set_byte_sent : process(curState)
+--storing data value inputted on the clock edge
+begin
+         if curState = SEND_SPACE  then
+          byte_sent <= true;
+          ELSE
+           byte_sent <= false;         
+          END IF;
+end process;   
+
+   set_peakStore : process(clk)
+--storing data value inputted on the clock edge
+begin
+    if rising_edge(clk) then
+          peakStore <= dataResults_reg(3); 
+   END IF;
+end process; 
+
+   set_listStored: process(curState)
+--storing data value inputted on the clock edge
+begin
+         if curState = LIST_INIT  then
+          listStored <= true;
+          ELSE
+           listStored <= false;         
+          END IF;
+end process; 
+
+   set_listStore: process(clk)
+--storing data value inputted on the clock edge
+begin
+    if rising_edge(clk) then
+            listStore <= dataResults_reg(listCount);                
+          END IF;
+end process; 
+     
+
+  ----------------output to tx--------------------------
+
+txData_Out : process(clk,curState,txDone_reg)
+begin
+    if rising_edge(clk) then
+        if rxnow_reg = '1' then --data echoing             
+            txNow <= '1';
+        elsif  curState = ANNN_BYTE_COUNT or curState = ANNN_DONE_CHECK then
+                        txNow <= '0';
+        elsif (curState = ANNN_BYTE_OUT1 or curState = ANNN_BYTE_OUT2 or 
+        curState = LIST_PRINT1 or curState = LIST_PRINT2 or curState = SEQ_DONE or curState = P_BYTE1 or curState = P_BYTE1_DONE or curState = P_BYTE2_DONE or 
+        curState = P_BYTE2 or curState = P_INDEX1 or curState = P_INDEX2 or
+        curState = P_INDEX3 or curState = LIST_SPACE) then
+            txNow <= '1';             
+       else 
+          txNow <= '0';        
+        end if;      
+    end if;
+end process;
+
+txData_Out2 : process(clk,txDone_reg)
+begin
+    if rising_edge(clk) then
+            txData <= sending;
+    end if;
+end process;
+
+txData_Out3 : process(clk,curState)
+begin
+    if rising_edge(clk) then
+            if curState = ANNN_BYTE_COUNT or curState = ANNN_DONE_CHECK or curState=ANNN_BYTE_OUT1 or curState=ANNN_BYTE_OUT2 or curState = LIST_COUNT
+            or curState= SEND_SPACE or curState = LIST_PRINT1 or curState = LIST_PRINT2
+            or curState= LIST_PRINT1_DONE or curState= LIST_PRINT2_DONE or curState= LIST_SPACE or curState= P_BYTE1 or curState= P_BYTE1_DONE or curState= P_BYTE2
+            or curState= P_BYTE2_DONE or curState= P_INDEX1 or curState= P_INDEX1_DONE or curState= P_INDEX2 or curState= P_INDEX2_DONE or curState = P_SPACE or curState= P_INDEX3  then   
+                  sending <=to_be_sent;
+               
+            else
+                  sending <=data_reg;  
+            end if;
+    end if;
+end process;
+
+  
+--progress to next state  
+next_state_seq : process(clk, reset)
+begin
+    if reset = '1' then
+        curState <= INIT;
+    elsif rising_edge(clk) then
+        curState <= nextState;
+    end if;
+end process;
+
+
+end Behavioral;
