@@ -62,7 +62,7 @@ function to_ascii(value : std_logic_vector) return std_logic_vector is
 -- State declaration for main FSM
   TYPE state_type IS (INIT, DATA_ECHO, INIT_BYTE, A, A_WAIT, AN, AN_WAIT, ANN, ANN_WAIT, ANNN, ANNN_BYTE_IN,
   SEND_SPACE, ANNN_DONE_CHECK, SEQ_DONE,ANNN_BYTE_COUNT, ANNN_BYTE_OUT1, ANNN_BYTE_OUT2, ANNN_DONE ,P, P_BYTE1,P_BYTE1_DONE,
-  P_BYTE2, P_BYTE2_DONE, P_SPACE, P_INDEX1, P_INDEX1_DONE, P_INDEX2, P_INDEX2_DONE,P_INDEX3, P_INDEX3_DONE, LIST_INIT, LIST_PRINT1, LIST_PRINT1_DONE,LIST_SPACE, LIST_PRINT2, LIST_PRINT2_DONE, LIST_COUNT);  -- List your states here 	
+  P_BYTE2, P_BYTE2_DONE, P_SPACE, P_INDEX1, P_INDEX1_DONE, P_INDEX2, P_INDEX2_DONE,P_INDEX3, P_INDEX3_DONE, LIST, LIST_PRINT1, LIST_PRINT1_DONE,LIST_SPACE, LIST_PRINT2, LIST_PRINT2_DONE, LIST_COUNT);  -- List your states here 	
   SIGNAL curState, nextState: state_type;
     
     signal data_reg, byte_reg: std_logic_vector(7 downto 0):= (others => '0');   -- data_reg: register to synchronously store byte from rx
@@ -142,11 +142,11 @@ begin
       elsif   curState= P_INDEX3   then    
           to_be_sent <= to_ascii(maxIndex_reg(0));   
           
-      elsif   curState= LIST_PRINT1   then    
-          to_be_sent <= to_ascii(listStore(7 downto 4));   
+      elsif   curState= LIST_PRINT1 or curState = LIST_PRINT1_DONE  then    
+          to_be_sent <= to_ascii(listStore(7 downto 4)); 
           
-                          elsif   curState= LIST_PRINT2   then    
-          to_be_sent <= to_ascii(listStore(3 downto 0));   
+      elsif   curState= LIST_PRINT2 or curState = LIST_PRINT2_DONE  then    
+          to_be_sent <= to_ascii(listStore(3 downto 0));
      else
      to_be_sent<= "00000000";
           
@@ -336,7 +336,7 @@ end process;
         ELSIF data_reg = lowerp or data_reg = upperp THEN 
           nextState <= P;
         ELSIF data_reg = lowerl or data_reg = upperl THEN 
-          nextState <= LIST_INIT;
+          nextState <= INIT;
         ELSE
           nextState <= INIT;
         END IF;
@@ -509,12 +509,12 @@ end process;
                 nextState <= P_INDEX3_DONE;
             end if;
         
-       WHEN LIST_INIT =>
-        IF listCount > 6 THEN 
-          nextState <= INIT;
-        ELSE
-          nextState <= LIST_PRINT1;      
-        END IF;
+       WHEN LIST =>
+        if txDone_reg = '1' then
+            nextState <= LIST_PRINT1;
+        else
+            nextState <= LIST;
+        end if;
                      
       WHEN LIST_PRINT1 =>
             IF txDone_reg = '1' THEN 
@@ -623,7 +623,7 @@ end process;
    set_listStored: process(curState)
 --storing data value inputted on the clock edge
 begin
-         if curState = LIST_INIT  then
+         if curState = LIST  then
           listStored <= true;
           ELSE
            listStored <= false;         
@@ -649,9 +649,10 @@ begin
         elsif  curState = ANNN_BYTE_COUNT or curState = ANNN_DONE_CHECK then
                         txNow <= '0';
         elsif (curState = ANNN_BYTE_OUT1 or curState = ANNN_BYTE_OUT2 or 
-        curState = LIST_PRINT1 or curState = LIST_PRINT2 or curState = LIST_SPACE or curState = SEQ_DONE
-        or curState = P_BYTE1 or curState = P_BYTE2 or curState = P_INDEX1 or curState = P_INDEX2 or
-        curState = P_INDEX3 or curState = LIST_SPACE) then
+        curState = LIST_PRINT1 or curState = LIST_PRINT2 or curState = SEQ_DONE or curState = P_BYTE1 or 
+        curState = P_BYTE2 or curState = P_INDEX1 or curState = P_INDEX1_DONE or curState = P_INDEX2 or
+        curState = P_INDEX2_DONE or
+        curState = P_INDEX3 or curState = LIST_SPACE) and txDone_reg = '1' then
             txNow <= '1';             
        else 
           txNow <= '0';        
