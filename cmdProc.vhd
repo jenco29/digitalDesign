@@ -142,11 +142,11 @@ begin
       elsif   curState= P_INDEX3   then    
           to_be_sent <= to_ascii(maxIndex_reg(0));   
           
-      elsif   curState= LIST_PRINT1 or curState = LIST_PRINT1_DONE  then    
+      elsif   curState= LIST_PRINT1   then    
           to_be_sent <= to_ascii(listStore(7 downto 4));   
           
-      elsif   curState= LIST_PRINT2 or curState = LIST_PRINT2_DONE  then    
-          to_be_sent <= to_ascii(listStore(3 downto 0));
+                          elsif   curState= LIST_PRINT2   then    
+          to_be_sent <= to_ascii(listStore(3 downto 0));   
      else
      to_be_sent<= "00000000";
           
@@ -649,10 +649,9 @@ begin
         elsif  curState = ANNN_BYTE_COUNT or curState = ANNN_DONE_CHECK then
                         txNow <= '0';
         elsif (curState = ANNN_BYTE_OUT1 or curState = ANNN_BYTE_OUT2 or 
-        curState = LIST_PRINT1 or curState = LIST_PRINT2 or curState = SEQ_DONE or curState = P_BYTE1 or 
-        curState = P_BYTE2 or curState = P_INDEX1 or curState = P_INDEX1_DONE or curState = P_INDEX2 or
-        curState = P_INDEX2_DONE or
-        curState = P_INDEX3 or curState = LIST_SPACE) and txDone_reg = '1' then
+        curState = LIST_PRINT1 or curState = LIST_PRINT2 or curState = LIST_SPACE or curState = SEQ_DONE
+        or curState = P_BYTE1 or curState = P_BYTE2 or curState = P_INDEX1 or curState = P_INDEX2 or
+        curState = P_INDEX3 or curState = LIST_SPACE) then
             txNow <= '1';             
        else 
           txNow <= '0';        
