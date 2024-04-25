@@ -93,8 +93,6 @@ function to_ascii(value : std_logic_vector) return std_logic_vector is
     constant space : std_logic_vector (7 downto 0) := "00100000";
     constant num_ascii : std_logic_vector (3 downto 0) := "0011";
 
-
-
 BEGIN
 
 ---------------store byte from rx--------------------------
@@ -114,7 +112,7 @@ begin
             else
                 ANNN_end<= false;           
             end if;
-end process; 
+end process;
 
 ---------------store byte from rx--------------------------
 set_to_be_sent : process(curState, nibble1,nibble2,listStore,peakStore,maxIndex_reg)
@@ -448,7 +446,11 @@ end process;
              
              
          WHEN P =>
+            if txDone_reg = '1' then
                 nextState <= P_BYTE1;
+            else
+                nextState <= P;
+            end if;
              
          WHEN P_BYTE1 => -- send first nibble of peak byte
             nextState <= P_BYTE1_DONE;
@@ -508,7 +510,7 @@ end process;
             end if;
         
        WHEN LIST_INIT =>
-        IF listCount = 7 THEN 
+        IF listCount >= 6 THEN 
           nextState <= INIT;
         ELSE
           nextState <= LIST_PRINT1;      
@@ -647,7 +649,7 @@ begin
         elsif  curState = ANNN_BYTE_COUNT or curState = ANNN_DONE_CHECK then
                         txNow <= '0';
         elsif (curState = ANNN_BYTE_OUT1 or curState = ANNN_BYTE_OUT2 or 
-        curState = LIST_PRINT1 or curState = LIST_PRINT2 or curState = SEQ_DONE or curState = P_BYTE1 or curState = P_BYTE1_DONE or 
+        curState = LIST_PRINT1 or curState = LIST_PRINT2 or curState = SEQ_DONE or curState = P_BYTE1 or 
         curState = P_BYTE2 or curState = P_INDEX1 or curState = P_INDEX2 or
         curState = P_INDEX3 or curState = LIST_SPACE) then
             txNow <= '1';             
