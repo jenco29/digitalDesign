@@ -129,10 +129,10 @@ begin
      elsif curState= SEND_SPACE or curState = P_SPACE or curState = LIST_SPACE or curState = ANNN_DONE_CHECK or curState=ANNN_BYTE_COUNT then    
           to_be_sent <= space;
           
-     elsif   curState= P_BYTE1 or curState = P_BYTE1_DONE  then    
+     elsif   curState= P_BYTE1   then    
           to_be_sent <= to_ascii(peakStore(7 downto 4));
           
-     elsif   curState= P_BYTE2 or curState = P_BYTE2_DONE  then    
+     elsif   curState= P_BYTE2   then    
           to_be_sent <= to_ascii(peakStore(3 downto 0));
              
       elsif   curState= P_INDEX1 or curState = P_INDEX1_DONE then    
@@ -141,7 +141,7 @@ begin
       elsif   curState= P_INDEX2 or curState = P_INDEX2_DONE then    
           to_be_sent <= to_ascii(maxIndex_reg(1));
           
-      elsif   curState= P_INDEX3 or curState = P_INDEX2_DONE  then    
+      elsif   curState= P_INDEX3   then    
           to_be_sent <= to_ascii(maxIndex_reg(2));   
           
                           elsif   curState= LIST_PRINT1   then    
@@ -450,14 +450,10 @@ end process;
          WHEN P =>
                 nextState <= P_BYTE1;
              
-          WHEN P_BYTE1 =>
-            IF txDone_reg = '1' THEN 
-                nextState <= P_BYTE1_DONE;
-            ELSE
-               nextState <= P_BYTE1_DONE;                
-            END IF;
+         WHEN P_BYTE1 => -- send first nibble of peak byte
+            nextState <= P_BYTE1_DONE;
             
-                   WHEN P_BYTE1_DONE =>
+         WHEN P_BYTE1_DONE =>
             IF txDone_reg = '1' THEN 
                 nextState <= P_BYTE2;
             ELSE
@@ -465,11 +461,7 @@ end process;
             END IF;
              
          WHEN P_BYTE2 =>
-            IF txDone_reg = '1' THEN 
-                nextState <= P_BYTE2_DONE;
-             ELSE
-               nextState <= P_BYTE2_DONE;               
-             END IF;
+            nextState <= P_BYTE2_DONE;
              
              WHEN P_BYTE2_DONE =>
             IF txDone_reg = '1' THEN 
@@ -486,13 +478,9 @@ end process;
              END IF;                     
              
         WHEN P_INDEX1 =>
-            IF txDone_reg = '1' THEN 
-                nextState <= P_INDEX1_DONE;
-            ELSE
-               nextState <= P_INDEX1_DONE;
-             END IF; 
+            nextState <= P_INDEX1_DONE;
              
-                 WHEN P_INDEX1_DONE =>
+          WHEN P_INDEX1_DONE =>
             IF txDone_reg = '1' THEN 
                 nextState <= P_INDEX2;
             ELSE
@@ -500,11 +488,7 @@ end process;
              END IF; 
                  
          WHEN P_INDEX2 =>
-            IF txDone_reg = '1' THEN 
-                nextState <= P_INDEX3;
-            ELSE
-               nextState <= P_INDEX2;
-             END IF;   
+            nextState <= P_INDEX2_DONE;
              
                WHEN P_INDEX2_DONE =>
             IF txDone_reg = '1' THEN 
