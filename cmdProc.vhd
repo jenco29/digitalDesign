@@ -62,7 +62,7 @@ function to_ascii(value : std_logic_vector) return std_logic_vector is
 -- State declaration for main FSM
   TYPE state_type IS (INIT, DATA_ECHO, INIT_BYTE, A, A_WAIT, AN, AN_WAIT, ANN, ANN_WAIT, ANNN, ANNN_BYTE_IN,
   SEND_SPACE, ANNN_DONE_CHECK, SEQ_DONE,ANNN_BYTE_COUNT, ANNN_BYTE_OUT1, ANNN_BYTE_OUT2, ANNN_DONE ,P, P_BYTE1,P_BYTE1_DONE,
-  P_BYTE2, P_BYTE2_DONE, P_SPACE, P_INDEX1, P_INDEX1_DONE, P_INDEX2, P_INDEX2_DONE,P_INDEX3, LIST_INIT, LIST_PRINT1, LIST_PRINT1_DONE,LIST_SPACE, LIST_PRINT2, LIST_PRINT2_DONE, LIST_COUNT);  -- List your states here 	
+  P_BYTE2, P_BYTE2_DONE, P_SPACE, P_INDEX1, P_INDEX1_DONE, P_INDEX2, P_INDEX2_DONE,P_INDEX3, P_INDEX3_DONE, LIST_INIT, LIST_PRINT1, LIST_PRINT1_DONE,LIST_SPACE, LIST_PRINT2, LIST_PRINT2_DONE, LIST_COUNT);  -- List your states here 	
   SIGNAL curState, nextState: state_type;
     
     signal data_reg, byte_reg: std_logic_vector(7 downto 0):= (others => '0');   -- data_reg: register to synchronously store byte from rx
@@ -75,7 +75,7 @@ function to_ascii(value : std_logic_vector) return std_logic_vector is
     
     signal listCount, ANNN_byteCount,NNN,index : integer :=0;
 
-    signal peakStored, listStored, NNNStored,bytes_stored, byte_sent, results_stored, ANNN_end, NNN_stored : boolean := false;
+    signal listStored, NNNStored,bytes_stored, byte_sent, results_stored, ANNN_end, NNN_stored : boolean := false;
 
     signal rxnow_reg, txdone_reg, dataReady_reg, seqDone_reg  : std_logic;
     signal maxIndex_reg : BCD_ARRAY_TYPE(2 downto 0) := (others => (others => '0'));
@@ -144,7 +144,7 @@ begin
       elsif   curState= P_INDEX3   then    
           to_be_sent <= to_ascii(maxIndex_reg(2));   
           
-                          elsif   curState= LIST_PRINT1   then    
+      elsif   curState= LIST_PRINT1   then    
           to_be_sent <= to_ascii(listStore(7 downto 4));   
           
                           elsif   curState= LIST_PRINT2   then    
@@ -490,7 +490,7 @@ end process;
          WHEN P_INDEX2 =>
             nextState <= P_INDEX2_DONE;
              
-               WHEN P_INDEX2_DONE =>
+         WHEN P_INDEX2_DONE =>
             IF txDone_reg = '1' THEN 
                 nextState <= P_INDEX3;
             ELSE
@@ -498,12 +498,14 @@ end process;
              END IF;      
                    
        WHEN P_INDEX3 =>
-            IF txDone_reg = '1' THEN 
-                nextState <= INIT;
-            ELSE
-               nextState <= P_INDEX3;
-             END IF; 
+            nextState <= P_INDEX3_DONE;
              
+       WHEN P_INDEX3_DONE =>
+            if txDone_reg = '1' then
+                nextState <= INIT;
+            else
+                nextState <= P_INDEX3_DONE;
+            end if;
         
        WHEN LIST_INIT =>
         IF listCount = 7 THEN 
